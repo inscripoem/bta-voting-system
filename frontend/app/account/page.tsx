@@ -134,7 +134,7 @@ export default function AccountPage() {
                   验证邮件已发送至 <strong>{email}</strong>
                 </p>
                 <p className="text-sm text-muted-foreground">
-                  请检查您的收件箱，点击邮件中的链接完成账户升级。如未收到，请检查垃��邮件文件夹。
+                  请检查您的收件箱，点击邮件中的链接完成账户升级。如未收到，请检查垃圾邮件文件夹。
                 </p>
                 <Button
                   variant="outline"

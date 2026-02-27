@@ -1,10 +1,9 @@
 "use client"
 
 import { useState } from "react"
+import { requestBlob, APIError } from "@/lib/api"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-
-const BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080/api/v1"
 
 export default function AdminExportPage() {
   const [schoolId, setSchoolId] = useState("")
@@ -15,18 +14,8 @@ export default function AdminExportPage() {
     setError(null)
     setDownloading(true)
     try {
-      const token = localStorage.getItem("access_token")
-      const url = `${BASE}/admin/votes/export${schoolId.trim() ? `?school_id=${encodeURIComponent(schoolId.trim())}` : ""}`
-      const res = await fetch(url, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      })
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({ message: res.statusText }))
-        throw new Error((err as { message?: string }).message ?? res.statusText)
-      }
-      const blob = await res.blob()
+      const path = `/admin/votes/export${schoolId.trim() ? `?school_id=${encodeURIComponent(schoolId.trim())}` : ""}`
+      const blob = await requestBlob(path)
       const objectUrl = URL.createObjectURL(blob)
       const a = document.createElement("a")
       a.href = objectUrl
@@ -34,7 +23,7 @@ export default function AdminExportPage() {
       a.click()
       URL.revokeObjectURL(objectUrl)
     } catch (err: unknown) {
-      if (err instanceof Error) {
+      if (err instanceof APIError) {
         setError(err.message)
       } else {
         setError("导出失败，请稍后再试")

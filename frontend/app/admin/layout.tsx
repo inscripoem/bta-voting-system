@@ -1,7 +1,9 @@
 "use client"
 
+import { useEffect, useState } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
+import { api } from "@/lib/api"
 
 const navItems = [
   { href: "/admin/session", label: "投票状态" },
@@ -12,6 +14,38 @@ const navItems = [
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
+  const [authorized, setAuthorized] = useState<boolean | null>(null)
+
+  useEffect(() => {
+    api.me
+      .get()
+      .then((user) => {
+        if (user.role === "school_admin" || user.role === "super_admin") {
+          setAuthorized(true)
+        } else {
+          setAuthorized(false)
+        }
+      })
+      .catch(() => {
+        setAuthorized(false)
+      })
+  }, [])
+
+  if (authorized === null) {
+    return (
+      <div className="container py-8 max-w-5xl mx-auto px-4">
+        <p className="text-muted-foreground text-sm">加载中…</p>
+      </div>
+    )
+  }
+
+  if (authorized === false) {
+    return (
+      <div className="container py-8 max-w-5xl mx-auto px-4">
+        <p className="text-destructive text-sm">无权限访问</p>
+      </div>
+    )
+  }
 
   return (
     <div className="container py-8 max-w-5xl mx-auto px-4">

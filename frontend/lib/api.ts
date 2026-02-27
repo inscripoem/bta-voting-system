@@ -28,6 +28,22 @@ export class APIError extends Error {
   }
 }
 
+export async function requestBlob(path: string, init?: RequestInit): Promise<Blob> {
+  const token = typeof window !== "undefined" ? localStorage.getItem("access_token") : null
+  const res = await fetch(`${BASE}${path}`, {
+    ...init,
+    headers: {
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...(init?.headers ?? {}),
+    },
+  })
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ message: res.statusText }))
+    throw new APIError(res.status, (err as { message?: string }).message ?? res.statusText)
+  }
+  return res.blob()
+}
+
 export interface School {
   id: string
   name: string
@@ -89,7 +105,7 @@ export interface UserInfo {
   id: string
   nickname: string
   email?: string
-  role: string
+  role: "voter" | "school_admin" | "super_admin"
   school_id?: string
   is_guest: boolean
 }

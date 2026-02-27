@@ -88,7 +88,7 @@ export default function AdminSessionPage() {
                   <Button
                     key={value}
                     variant={isCurrent ? "default" : "outline"}
-                    disabled={updating || !session}
+                    disabled={updating || !session || value === session?.status}
                     onClick={() => handleStatusChange(value)}
                     className={isCurrent ? "ring-2 ring-primary ring-offset-2" : ""}
                   >
