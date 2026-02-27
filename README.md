@@ -6,7 +6,7 @@
 
 ```
 frontend/   Next.js 15（部署至 Vercel）
-backend/    Go 1.23 + Echo（自托管 Docker）
+backend/    Go 1.24 + Echo（自托管 Docker）
             PostgreSQL（数据库）
 ```
 
@@ -28,7 +28,7 @@ bta-voting-system/
 
 | 工具 | 版本要求 |
 |------|---------|
-| Go | 1.23+ |
+| Go | 1.24+ |
 | Bun | 最新稳定版 |
 | Docker Compose | v2+ |
 
@@ -58,13 +58,23 @@ bun run dev
 
 ### 方式二：Docker Compose（含数据库）
 
+> **注意**：`docker-compose.yml` 仅包含 `db` 和 `backend` 服务，不含前端容器。
+
 ```bash
 cp backend/.env.example backend/.env
 # 编辑 backend/.env
-docker compose up --build
+docker compose up --build -d
+
+# 数据库迁移（需在本地单独运行，Dockerfile 仅编译 server 二进制）
+cd backend && go run ./cmd/migrate
 ```
 
-前端默认运行在 `http://localhost:3000`，后端 API 在 `http://localhost:8080/api/v1`。
+后端 API 在 `http://localhost:8080/api/v1`。前端需单独启动：
+
+```bash
+cd frontend
+bun run dev
+```
 
 ## 环境变量
 
