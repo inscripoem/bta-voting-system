@@ -1,0 +1,219 @@
+package service
+
+import (
+	"context"
+	"crypto/rand"
+	"encoding/hex"
+	"errors"
+	"strings"
+	"time"
+
+	"golang.org/x/crypto/bcrypt"
+
+	"github.com/google/uuid"
+	"github.com/inscripoem/bta-voting-system/backend/internal/ent"
+	entschool "github.com/inscripoem/bta-voting-system/backend/internal/ent/school"
+	entuser "github.com/inscripoem/bta-voting-system/backend/internal/ent/user"
+)
+
+var (
+	ErrNicknameConflictSameSchool      = errors.New("nickname_conflict_same_school")
+	ErrNicknameConflictDifferentSchool = errors.New("nickname_conflict_different_school")
+	ErrWrongAnswer                     = errors.New("wrong_answer")
+	ErrEmailSuffixNotAllowed           = errors.New("email_suffix_not_allowed")
+	ErrInvalidCode                     = errors.New("invalid_or_expired_code")
+	ErrSchoolNotFound                  = errors.New("school_not_found")
+)
+
+type codeEntry struct {
+	code      string
+	expiresAt time.Time
+	schoolID  uuid.UUID
+}
+
+type AuthService struct {
+	db    *ent.Client
+	jwt   *JWTService
+	email EmailSender
+	codes map[string]codeEntry // email → code entry; production: use Redis
+}
+
+func NewAuthService(db *ent.Client, jwt *JWTService, email EmailSender) *AuthService {
+	return &AuthService{
+		db:    db,
+		jwt:   jwt,
+		email: email,
+		codes: make(map[string]codeEntry),
+	}
+}
+
+// GuestByQuestion creates or logs in a guest user via verification question answer.
+func (s *AuthService) GuestByQuestion(ctx context.Context, nickname, schoolCode, answer, ip, ua string) (access, refresh string, err error) {
+	school, err := s.db.School.Query().Where(entschool.Code(schoolCode)).Only(ctx)
+	if err != nil {
+		return "", "", ErrSchoolNotFound
+	}
+	// Validate answer against first verification question
+	questions := school.VerificationQuestions
+	if len(questions) > 0 {
+		expected := questions[0]["answer"]
+		if !strings.EqualFold(strings.TrimSpace(answer), strings.TrimSpace(expected)) {
+			return "", "", ErrWrongAnswer
+		}
+	}
+	return s.findOrCreateGuest(ctx, nickname, school, ip, ua)
+}
+
+// SendEmailCode sends a 6-digit verification code to the given email if it matches school suffixes.
+func (s *AuthService) SendEmailCode(ctx context.Context, emailAddr, schoolCode string) error {
+	school, err := s.db.School.Query().Where(entschool.Code(schoolCode)).Only(ctx)
+	if err != nil {
+		return ErrSchoolNotFound
+	}
+	suffixes := school.EmailSuffixes
+	if !emailMatchesSuffixes(emailAddr, suffixes) {
+		return ErrEmailSuffixNotAllowed
+	}
+	code := generateCode()
+	s.codes[emailAddr] = codeEntry{
+		code:      code,
+		expiresAt: time.Now().Add(5 * time.Minute),
+		schoolID:  school.ID,
+	}
+	return s.email.SendVerificationCode(emailAddr, code)
+}
+
+// GuestByEmail creates or logs in a guest user via email verification code.
+func (s *AuthService) GuestByEmail(ctx context.Context, nickname, emailAddr, code, ip, ua string) (access, refresh string, err error) {
+	entry, ok := s.codes[emailAddr]
+	if !ok || entry.code != code || time.Now().After(entry.expiresAt) {
+		return "", "", ErrInvalidCode
+	}
+	delete(s.codes, emailAddr)
+
+	school, err := s.db.School.Get(ctx, entry.schoolID)
+	if err != nil {
+		return "", "", ErrSchoolNotFound
+	}
+	return s.findOrCreateGuest(ctx, nickname, school, ip, ua)
+}
+
+// ReauthByQuestion re-authenticates an existing user with same school via question.
+// Returns the user's tokens if successful.
+func (s *AuthService) ReauthByQuestion(ctx context.Context, nickname, schoolCode, answer string) (access, refresh string, err error) {
+	school, err := s.db.School.Query().Where(entschool.Code(schoolCode)).Only(ctx)
+	if err != nil {
+		return "", "", ErrSchoolNotFound
+	}
+	questions := school.VerificationQuestions
+	if len(questions) > 0 {
+		expected := questions[0]["answer"]
+		if !strings.EqualFold(strings.TrimSpace(answer), strings.TrimSpace(expected)) {
+			return "", "", ErrWrongAnswer
+		}
+	}
+	user, err := s.db.User.Query().Where(entuser.Nickname(nickname)).Only(ctx)
+	if err != nil {
+		return "", "", errors.New("user not found")
+	}
+	return s.issueTokens(ctx, user)
+}
+
+// ReauthByEmail re-authenticates an existing user with same school via email code.
+func (s *AuthService) ReauthByEmail(ctx context.Context, nickname, emailAddr, code string) (access, refresh string, err error) {
+	entry, ok := s.codes[emailAddr]
+	if !ok || entry.code != code || time.Now().After(entry.expiresAt) {
+		return "", "", ErrInvalidCode
+	}
+	delete(s.codes, emailAddr)
+	user, err := s.db.User.Query().Where(entuser.Nickname(nickname)).Only(ctx)
+	if err != nil {
+		return "", "", errors.New("user not found")
+	}
+	return s.issueTokens(ctx, user)
+}
+
+// Login authenticates a registered (non-guest) user by nickname and password.
+func (s *AuthService) Login(ctx context.Context, nickname, password string) (access, refresh string, err error) {
+	user, err := s.db.User.Query().Where(entuser.Nickname(nickname)).Only(ctx)
+	if err != nil || user.IsGuest {
+		return "", "", errors.New("invalid credentials")
+	}
+	if user.PasswordHash == nil || !CheckPassword(*user.PasswordHash, password) {
+		return "", "", errors.New("invalid credentials")
+	}
+	return s.issueTokens(ctx, user)
+}
+
+// HashPassword hashes a plaintext password with bcrypt.
+func HashPassword(password string) (string, error) {
+	b, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	return string(b), err
+}
+
+// CheckPassword checks a plaintext password against a bcrypt hash.
+func CheckPassword(hash, password string) bool {
+	return bcrypt.CompareHashAndPassword([]byte(hash), []byte(password)) == nil
+}
+
+// findOrCreateGuest looks up a user by nickname:
+//   - not found → create new guest
+//   - found, same school → ErrNicknameConflictSameSchool
+//   - found, different school → ErrNicknameConflictDifferentSchool
+func (s *AuthService) findOrCreateGuest(ctx context.Context, nickname string, school *ent.School, ip, ua string) (access, refresh string, err error) {
+	existing, err := s.db.User.Query().Where(entuser.Nickname(nickname)).Only(ctx)
+	if err != nil && !ent.IsNotFound(err) {
+		return "", "", err
+	}
+	if existing != nil {
+		existingSchool, _ := existing.QuerySchool().Only(ctx)
+		if existingSchool != nil && existingSchool.ID == school.ID {
+			return "", "", ErrNicknameConflictSameSchool
+		}
+		return "", "", ErrNicknameConflictDifferentSchool
+	}
+	user, err := s.db.User.Create().
+		SetNickname(nickname).
+		SetIsGuest(true).
+		SetRole(entuser.RoleVoter).
+		SetSchool(school).
+		Save(ctx)
+	if err != nil {
+		return "", "", err
+	}
+	return s.issueTokens(ctx, user)
+}
+
+func (s *AuthService) issueTokens(ctx context.Context, user *ent.User) (access, refresh string, err error) {
+	school, _ := user.QuerySchool().Only(ctx)
+	var schoolIDPtr *uuid.UUID
+	if school != nil {
+		id := school.ID
+		schoolIDPtr = &id
+	}
+	access, err = s.jwt.GenerateAccess(user.ID, string(user.Role), schoolIDPtr, user.IsGuest)
+	if err != nil {
+		return "", "", err
+	}
+	refresh, err = s.jwt.GenerateRefresh(user.ID)
+	return access, refresh, err
+}
+
+func emailMatchesSuffixes(email string, suffixes []string) bool {
+	if len(suffixes) == 0 {
+		return true
+	}
+	lower := strings.ToLower(email)
+	for _, s := range suffixes {
+		if strings.HasSuffix(lower, strings.ToLower(s)) {
+			return true
+		}
+	}
+	return false
+}
+
+func generateCode() string {
+	b := make([]byte, 3)
+	rand.Read(b)
+	return strings.ToUpper(hex.EncodeToString(b))[:6]
+}
