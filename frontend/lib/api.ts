@@ -85,6 +85,15 @@ export interface ConflictResponse {
   conflict: "same_school" | "different_school"
 }
 
+export interface UserInfo {
+  id: string
+  nickname: string
+  email?: string
+  role: string
+  school_id?: string
+  is_guest: boolean
+}
+
 export const api = {
   schools: {
     list: () => request<School[]>("/schools"),
@@ -112,6 +121,24 @@ export const api = {
       request<TokenResponse>("/auth/login", {
         method: "POST",
         body: JSON.stringify({ nickname, password }),
+      }),
+    upgrade: (email: string) =>
+      request<{ message: string }>("/auth/upgrade", {
+        method: "POST",
+        body: JSON.stringify({ email }),
+      }),
+  },
+  me: {
+    get: () => request<UserInfo>("/me"),
+  },
+  admin: {
+    patchSessionStatus: (
+      id: string,
+      status: "pending" | "active" | "counting" | "published"
+    ) =>
+      request<VotingSession>(`/admin/sessions/${id}/status`, {
+        method: "PATCH",
+        body: JSON.stringify({ status }),
       }),
   },
   sessions: {
