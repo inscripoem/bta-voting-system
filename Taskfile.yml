@@ -32,7 +32,7 @@ tasks:
     dir: '{{.BACKEND_DIR}}'
     cmd: go run ./cmd/migrate
 
-  test:
+  test:backend:
     desc: 运行后端测试
     dir: '{{.BACKEND_DIR}}'
     cmd: go test ./...
