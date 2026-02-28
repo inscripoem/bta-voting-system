@@ -11,6 +11,7 @@ type Config struct {
 	JWTSecret        string
 	JWTRefreshSecret string
 	EmailProvider    string // "resend" | "smtp"
+	EmailFrom        string // FROM address for all outgoing emails
 	SMTPHost         string
 	SMTPPort         int
 	SMTPUser         string
@@ -29,6 +30,7 @@ func Load() (*Config, error) {
 		JWTSecret:        requireEnv("JWT_SECRET"),
 		JWTRefreshSecret: requireEnv("JWT_REFRESH_SECRET"),
 		EmailProvider:    getEnv("EMAIL_PROVIDER", "smtp"),
+		EmailFrom:        getEnv("EMAIL_FROM", "noreply@bta.example.com"),
 		SMTPHost:         getEnv("SMTP_HOST", ""),
 		SMTPPort:         port,
 		SMTPUser:         getEnv("SMTP_USER", ""),

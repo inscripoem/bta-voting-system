@@ -57,7 +57,7 @@ func NewSMTPSender(cfg *config.Config) *SMTPSender {
 		port:      cfg.SMTPPort,
 		user:      cfg.SMTPUser,
 		pass:      cfg.SMTPPass,
-		fromEmail: cfg.SMTPUser,
+		fromEmail: cfg.EmailFrom,
 	}
 }
 
@@ -108,7 +108,7 @@ func (s *SMTPSender) SendUpgradeVerification(to, link string) error {
 
 func NewEmailSender(cfg *config.Config) EmailSender {
 	if cfg.EmailProvider == "resend" {
-		return NewResendSender(cfg.ResendAPIKey, cfg.SMTPUser)
+		return NewResendSender(cfg.ResendAPIKey, cfg.EmailFrom)
 	}
 	return NewSMTPSender(cfg)
 }

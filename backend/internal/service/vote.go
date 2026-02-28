@@ -65,10 +65,8 @@ func (s *VoteService) UpsertItems(ctx context.Context, userID, sessionID, school
 		nomineeMap[n.ID] = n
 	}
 
-	// Group scores by award for max_count validation
-	awardScores := make(map[uuid.UUID][]int)
+	// Validate each incoming item (score allowed, school restriction)
 	awardByNominee := make(map[uuid.UUID]*ent.Award)
-
 	for _, it := range items {
 		n, ok := nomineeMap[it.NomineeID]
 		if !ok {
@@ -90,12 +88,60 @@ func (s *VoteService) UpsertItems(ctx context.Context, userID, sessionID, school
 			return ErrWrongSchoolForAward
 		}
 
-		awardScores[award.ID] = append(awardScores[award.ID], it.Score)
 		awardByNominee[it.NomineeID] = award
 	}
 
-	// Validate max_count constraints per award
-	for awardID, scores := range awardScores {
+	// Fetch user's existing vote items for this session to validate max_count
+	// against the merged (existing + incoming) set.
+	existingItems, err := s.db.VoteItem.Query().
+		Where(
+			entvoteitem.HasUserWith(entuser.ID(userID)),
+			entvoteitem.HasSessionWith(entvotingsession.ID(sessionID)),
+		).
+		WithNominee().
+		All(ctx)
+	if err != nil {
+		return fmt.Errorf("fetch existing votes: %w", err)
+	}
+
+	// Build existing score map: nomineeID → score
+	existingScores := make(map[uuid.UUID]int, len(existingItems))
+	for _, vi := range existingItems {
+		if vi.Edges.Nominee != nil {
+			existingScores[vi.Edges.Nominee.ID] = vi.Score
+		}
+	}
+
+	// Apply incoming changes on top of existing scores
+	for _, item := range items {
+		existingScores[item.NomineeID] = item.Score
+	}
+
+	// Group merged scores by award for max_count validation
+	awardMergedScores := make(map[uuid.UUID][]int)
+	for nomineeID, score := range existingScores {
+		// Determine award for this nominee — check incoming nominees first
+		award, ok := awardByNominee[nomineeID]
+		if !ok {
+			// This nominee is from existing items not in the current request;
+			// we need to load its award.
+			n, err := s.db.Nominee.Query().
+				Where(entnominee.ID(nomineeID)).
+				WithAward().
+				Only(ctx)
+			if err != nil {
+				continue // skip if can't load (shouldn't happen)
+			}
+			if n.Edges.Award == nil {
+				continue
+			}
+			award = n.Edges.Award
+		}
+		awardMergedScores[award.ID] = append(awardMergedScores[award.ID], score)
+	}
+
+	// Validate max_count constraints per award against merged set
+	for awardID, scores := range awardMergedScores {
 		award, err := s.db.Award.Query().Where(entaward.ID(awardID)).Only(ctx)
 		if err != nil {
 			return err
@@ -115,11 +161,16 @@ func (s *VoteService) UpsertItems(ctx context.Context, userID, sessionID, school
 		}
 	}
 
-	// Upsert each item: query for existing, update if found, create if not
+	// Wrap the upsert loop in a transaction
+	tx, err := s.db.Tx(ctx)
+	if err != nil {
+		return fmt.Errorf("begin transaction: %w", err)
+	}
+
 	for _, it := range items {
 		award := awardByNominee[it.NomineeID]
 
-		existing, queryErr := s.db.VoteItem.Query().
+		existing, queryErr := tx.VoteItem.Query().
 			Where(
 				entvoteitem.HasUserWith(entuser.ID(userID)),
 				entvoteitem.HasSessionWith(entvotingsession.ID(sessionID)),
@@ -128,19 +179,21 @@ func (s *VoteService) UpsertItems(ctx context.Context, userID, sessionID, school
 			Only(ctx)
 
 		if queryErr != nil && !ent.IsNotFound(queryErr) {
+			_ = tx.Rollback()
 			return queryErr
 		}
 
+		var upsertErr error
 		if existing != nil {
 			// Update existing vote item
-			err = existing.Update().
+			upsertErr = existing.Update().
 				SetScore(it.Score).
 				SetNillableIPAddress(&ip).
 				SetNillableUserAgent(&ua).
 				Exec(ctx)
 		} else {
 			// Create new vote item
-			err = s.db.VoteItem.Create().
+			upsertErr = tx.VoteItem.Create().
 				SetUserID(userID).
 				SetSessionID(sessionID).
 				SetSchoolID(schoolID).
@@ -151,11 +204,13 @@ func (s *VoteService) UpsertItems(ctx context.Context, userID, sessionID, school
 				SetUserAgent(ua).
 				Exec(ctx)
 		}
-		if err != nil {
-			return err
+		if upsertErr != nil {
+			_ = tx.Rollback()
+			return upsertErr
 		}
 	}
-	return nil
+
+	return tx.Commit()
 }
 
 // GetItems returns all vote items for a user in a session.

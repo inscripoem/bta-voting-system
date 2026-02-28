@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"strings"
+	"sync"
 	"time"
 
 	"golang.org/x/crypto/bcrypt"
@@ -35,6 +36,7 @@ type AuthService struct {
 	db    *ent.Client
 	jwt   *JWTService
 	email EmailSender
+	mu    sync.RWMutex         // protects codes
 	codes map[string]codeEntry // email → code entry; production: use Redis
 }
 
@@ -45,6 +47,21 @@ func NewAuthService(db *ent.Client, jwt *JWTService, email EmailSender) *AuthSer
 		email: email,
 		codes: make(map[string]codeEntry),
 	}
+}
+
+// DB returns the underlying ent client.
+func (s *AuthService) DB() *ent.Client {
+	return s.db
+}
+
+// JWT returns the underlying JWTService.
+func (s *AuthService) JWT() *JWTService {
+	return s.jwt
+}
+
+// Email returns the underlying EmailSender.
+func (s *AuthService) Email() EmailSender {
+	return s.email
 }
 
 // GuestByQuestion creates or logs in a guest user via verification question answer.
@@ -61,7 +78,7 @@ func (s *AuthService) GuestByQuestion(ctx context.Context, nickname, schoolCode,
 			return "", "", ErrWrongAnswer
 		}
 	}
-	return s.findOrCreateGuest(ctx, nickname, school, ip, ua)
+	return s.findOrCreateGuest(ctx, nickname, school, nil, ip, ua)
 }
 
 // SendEmailCode sends a 6-digit verification code to the given email if it matches school suffixes.
@@ -75,27 +92,33 @@ func (s *AuthService) SendEmailCode(ctx context.Context, emailAddr, schoolCode s
 		return ErrEmailSuffixNotAllowed
 	}
 	code := generateCode()
+	s.mu.Lock()
 	s.codes[emailAddr] = codeEntry{
 		code:      code,
 		expiresAt: time.Now().Add(5 * time.Minute),
 		schoolID:  school.ID,
 	}
+	s.mu.Unlock()
 	return s.email.SendVerificationCode(emailAddr, code)
 }
 
 // GuestByEmail creates or logs in a guest user via email verification code.
 func (s *AuthService) GuestByEmail(ctx context.Context, nickname, emailAddr, code, ip, ua string) (access, refresh string, err error) {
+	s.mu.RLock()
 	entry, ok := s.codes[emailAddr]
+	s.mu.RUnlock()
 	if !ok || entry.code != code || time.Now().After(entry.expiresAt) {
 		return "", "", ErrInvalidCode
 	}
+	s.mu.Lock()
 	delete(s.codes, emailAddr)
+	s.mu.Unlock()
 
 	school, err := s.db.School.Get(ctx, entry.schoolID)
 	if err != nil {
 		return "", "", ErrSchoolNotFound
 	}
-	return s.findOrCreateGuest(ctx, nickname, school, ip, ua)
+	return s.findOrCreateGuest(ctx, nickname, school, &emailAddr, ip, ua)
 }
 
 // ReauthByQuestion re-authenticates an existing user with same school via question.
@@ -121,11 +144,15 @@ func (s *AuthService) ReauthByQuestion(ctx context.Context, nickname, schoolCode
 
 // ReauthByEmail re-authenticates an existing user with same school via email code.
 func (s *AuthService) ReauthByEmail(ctx context.Context, nickname, emailAddr, code string) (access, refresh string, err error) {
+	s.mu.RLock()
 	entry, ok := s.codes[emailAddr]
+	s.mu.RUnlock()
 	if !ok || entry.code != code || time.Now().After(entry.expiresAt) {
 		return "", "", ErrInvalidCode
 	}
+	s.mu.Lock()
 	delete(s.codes, emailAddr)
+	s.mu.Unlock()
 	user, err := s.db.User.Query().Where(entuser.Nickname(nickname)).Only(ctx)
 	if err != nil {
 		return "", "", errors.New("user not found")
@@ -157,10 +184,10 @@ func CheckPassword(hash, password string) bool {
 }
 
 // findOrCreateGuest looks up a user by nickname:
-//   - not found → create new guest
+//   - not found → create new guest (optionally with email)
 //   - found, same school → ErrNicknameConflictSameSchool
 //   - found, different school → ErrNicknameConflictDifferentSchool
-func (s *AuthService) findOrCreateGuest(ctx context.Context, nickname string, school *ent.School, ip, ua string) (access, refresh string, err error) {
+func (s *AuthService) findOrCreateGuest(ctx context.Context, nickname string, school *ent.School, email *string, ip, ua string) (access, refresh string, err error) {
 	existing, err := s.db.User.Query().Where(entuser.Nickname(nickname)).Only(ctx)
 	if err != nil && !ent.IsNotFound(err) {
 		return "", "", err
@@ -174,6 +201,7 @@ func (s *AuthService) findOrCreateGuest(ctx context.Context, nickname string, sc
 	}
 	user, err := s.db.User.Create().
 		SetNickname(nickname).
+		SetNillableEmail(email).
 		SetIsGuest(true).
 		SetRole(entuser.RoleVoter).
 		SetSchool(school).
@@ -204,8 +232,13 @@ func emailMatchesSuffixes(email string, suffixes []string) bool {
 		return true
 	}
 	lower := strings.ToLower(email)
+	atIdx := strings.LastIndex(lower, "@")
+	if atIdx < 0 {
+		return false
+	}
+	domain := lower[atIdx:] // e.g. "@pku.edu.cn"
 	for _, s := range suffixes {
-		if strings.HasSuffix(lower, strings.ToLower(s)) {
+		if domain == strings.ToLower(s) {
 			return true
 		}
 	}

@@ -86,3 +86,45 @@ func (s *JWTService) ParseRefresh(tokenStr string) (uuid.UUID, error) {
 	}
 	return uuid.Nil, errors.New("invalid refresh token")
 }
+
+// EmailVerifyClaims holds the claims for an email verification token.
+type EmailVerifyClaims struct {
+	UserID   uuid.UUID `json:"user_id"`
+	NewEmail string    `json:"new_email"`
+	Type     string    `json:"type"` // always "email_verify"
+	jwt.RegisteredClaims
+}
+
+// GenerateEmailVerify generates a short-lived JWT for email verification (24h).
+func (s *JWTService) GenerateEmailVerify(userID uuid.UUID, newEmail string) (string, error) {
+	claims := EmailVerifyClaims{
+		UserID:   userID,
+		NewEmail: newEmail,
+		Type:     "email_verify",
+		RegisteredClaims: jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(24 * time.Hour)),
+			IssuedAt:  jwt.NewNumericDate(time.Now()),
+		},
+	}
+	return jwt.NewWithClaims(jwt.SigningMethodHS256, claims).SignedString(s.secret)
+}
+
+// ParseEmailVerify parses and validates an email verification token.
+func (s *JWTService) ParseEmailVerify(tokenStr string) (*EmailVerifyClaims, error) {
+	token, err := jwt.ParseWithClaims(tokenStr, &EmailVerifyClaims{}, func(t *jwt.Token) (interface{}, error) {
+		if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, errors.New("unexpected signing method")
+		}
+		return s.secret, nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	if claims, ok := token.Claims.(*EmailVerifyClaims); ok && token.Valid {
+		if claims.Type != "email_verify" {
+			return nil, errors.New("invalid token type")
+		}
+		return claims, nil
+	}
+	return nil, errors.New("invalid email verify token")
+}

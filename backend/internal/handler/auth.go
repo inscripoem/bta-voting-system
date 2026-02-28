@@ -1,19 +1,23 @@
 package handler
 
 import (
+	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/labstack/echo/v4"
 
+	apimw "github.com/inscripoem/bta-voting-system/backend/internal/middleware"
 	"github.com/inscripoem/bta-voting-system/backend/internal/service"
 )
 
 type AuthHandler struct {
-	auth *service.AuthService
+	auth    *service.AuthService
+	frontendURL string
 }
 
-func NewAuthHandler(auth *service.AuthService) *AuthHandler {
-	return &AuthHandler{auth: auth}
+func NewAuthHandler(auth *service.AuthService, frontendURL string) *AuthHandler {
+	return &AuthHandler{auth: auth, frontendURL: frontendURL}
 }
 
 type guestRequest struct {
@@ -126,4 +130,83 @@ func (h *AuthHandler) Login(c echo.Context) error {
 		"access_token":  access,
 		"refresh_token": refresh,
 	})
+}
+
+// Me returns the current authenticated user's profile.
+func (h *AuthHandler) Me(c echo.Context) error {
+	claims := c.Get(apimw.ClaimsKey).(*service.Claims)
+	user, err := h.auth.DB().User.Get(c.Request().Context(), claims.UserID)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusNotFound, "user not found")
+	}
+	resp := map[string]any{
+		"id":       user.ID,
+		"nickname": user.Nickname,
+		"role":     user.Role,
+		"is_guest": user.IsGuest,
+	}
+	if user.Email != nil {
+		resp["email"] = *user.Email
+	}
+	if claims.SchoolID != nil {
+		resp["school_id"] = claims.SchoolID
+	}
+	return c.JSON(http.StatusOK, resp)
+}
+
+type upgradeRequest struct {
+	Email string `json:"email"`
+}
+
+// Upgrade initiates the account upgrade flow by sending a verification email.
+func (h *AuthHandler) Upgrade(c echo.Context) error {
+	claims := c.Get(apimw.ClaimsKey).(*service.Claims)
+
+	var req upgradeRequest
+	if err := c.Bind(&req); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	// Basic email format validation
+	if !strings.Contains(req.Email, "@") {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid email format")
+	}
+
+	// Generate a short-lived email verification token (24h)
+	token, err := h.auth.JWT().GenerateEmailVerify(claims.UserID, req.Email)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to generate token")
+	}
+
+	link := fmt.Sprintf("%s/auth/verify-email?token=%s", h.frontendURL, token)
+
+	if err := h.auth.Email().SendUpgradeVerification(req.Email, link); err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to send email")
+	}
+
+	return c.JSON(http.StatusOK, map[string]string{"message": "验证邮件已发送"})
+}
+
+// VerifyEmail completes the account upgrade by verifying the email token.
+func (h *AuthHandler) VerifyEmail(c echo.Context) error {
+	tokenStr := c.QueryParam("token")
+	if tokenStr == "" {
+		return echo.NewHTTPError(http.StatusBadRequest, "missing token")
+	}
+
+	claims, err := h.auth.JWT().ParseEmailVerify(tokenStr)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusUnauthorized, "invalid or expired token")
+	}
+
+	ctx := c.Request().Context()
+	_, err = h.auth.DB().User.UpdateOneID(claims.UserID).
+		SetIsGuest(false).
+		SetEmail(claims.NewEmail).
+		Save(ctx)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to upgrade account")
+	}
+
+	return c.JSON(http.StatusOK, map[string]string{"message": "账户升级成功"})
 }

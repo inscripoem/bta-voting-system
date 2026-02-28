@@ -39,7 +39,7 @@ func main() {
 	voteSvc := service.NewVoteService(db)
 
 	// Handlers
-	authH := handler.NewAuthHandler(authSvc)
+	authH := handler.NewAuthHandler(authSvc, cfg.FrontendURL)
 	voteH := handler.NewVoteHandler(voteSvc)
 	schoolH := handler.NewSchoolHandler(db)
 	awardH := handler.NewAwardHandler(db)
@@ -72,10 +72,18 @@ func main() {
 
 	v1 := e.Group("/api/v1")
 
+	// JWT middleware (used across multiple route groups)
+	jwtMW := apimw.JWT(jwtSvc)
+
 	// Auth
 	v1.POST("/auth/guest", authH.Guest)
 	v1.POST("/auth/send-code", authH.SendCode)
 	v1.POST("/auth/login", authH.Login)
+	v1.POST("/auth/upgrade", authH.Upgrade, jwtMW)
+	v1.GET("/auth/verify-email", authH.VerifyEmail)
+
+	// User info (requires JWT)
+	v1.GET("/me", authH.Me, jwtMW)
 
 	// Public
 	v1.GET("/sessions/current", awardH.CurrentSession)
@@ -85,7 +93,6 @@ func main() {
 	v1.GET("/results", adminH.Results)
 
 	// Voting (requires JWT)
-	jwtMW := apimw.JWT(jwtSvc)
 	vote := v1.Group("/vote", jwtMW)
 	vote.GET("/items", voteH.GetItems)
 	vote.PUT("/items", voteH.UpsertItems)

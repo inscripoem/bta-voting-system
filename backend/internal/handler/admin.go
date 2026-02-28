@@ -30,6 +30,11 @@ type patchStatusRequest struct {
 }
 
 func (h *AdminHandler) PatchSessionStatus(c echo.Context) error {
+	claims := c.Get(apimw.ClaimsKey).(*service.Claims)
+	if claims.Role != "super_admin" {
+		return echo.NewHTTPError(http.StatusForbidden, "super_admin required")
+	}
+
 	var req patchStatusRequest
 	if err := c.Bind(&req); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
