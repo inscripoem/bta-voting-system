@@ -1,19 +1,22 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import Link from "next/link"
-import { usePathname } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 import { api } from "@/lib/api"
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 const navItems = [
-  { href: "/admin/session", label: "投票状态" },
+  { href: "/admin/session", label: "投票会话" },
   { href: "/admin/schools", label: "学校管理" },
   { href: "/admin/awards", label: "奖项管理" },
-  { href: "/admin/export", label: "导出数据" },
+  { href: "/admin/votes", label: "投票数据" },
+  { href: "/admin/users", label: "用户管理" },
+  { href: "/admin/export", label: "数据导出" },
 ]
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
+  const router = useRouter()
   const [authorized, setAuthorized] = useState<boolean | null>(null)
 
   useEffect(() => {
@@ -24,12 +27,14 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           setAuthorized(true)
         } else {
           setAuthorized(false)
+          router.push("/auth/login")
         }
       })
       .catch(() => {
         setAuthorized(false)
+        router.push("/auth/login")
       })
-  }, [])
+  }, [router])
 
   if (authorized === null) {
     return (
@@ -40,36 +45,24 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   }
 
   if (authorized === false) {
-    return (
-      <div className="container py-8 max-w-5xl mx-auto px-4">
-        <p className="text-destructive text-sm">无权限访问</p>
-      </div>
-    )
+    return null
   }
+
+  const activeTab = navItems.find((item) => pathname.startsWith(item.href))?.href || navItems[0].href
 
   return (
     <div className="container py-8 max-w-5xl mx-auto px-4">
       <div className="mb-6">
         <h1 className="text-2xl font-bold mb-4">管理后台</h1>
-        <nav className="flex gap-1 border-b pb-0">
-          {navItems.map((item) => {
-            const isActive = pathname.startsWith(item.href)
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={[
-                  "px-4 py-2 text-sm font-medium rounded-t-md border-b-2 transition-colors",
-                  isActive
-                    ? "border-primary text-primary"
-                    : "border-transparent text-muted-foreground hover:text-foreground hover:border-muted-foreground",
-                ].join(" ")}
-              >
+        <Tabs value={activeTab} onValueChange={(value) => router.push(value)}>
+          <TabsList>
+            {navItems.map((item) => (
+              <TabsTrigger key={item.href} value={item.href}>
                 {item.label}
-              </Link>
-            )
-          })}
-        </nav>
+              </TabsTrigger>
+            ))}
+          </TabsList>
+        </Tabs>
       </div>
       <div>{children}</div>
     </div>

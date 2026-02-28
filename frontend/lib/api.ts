@@ -124,6 +124,74 @@ export interface UserInfo {
   is_guest: boolean
 }
 
+// Admin API types
+export interface PaginatedResponse<T> {
+  data: T[]
+  total: number
+  page: number
+  page_size: number
+}
+
+export interface SessionListItem {
+  id: string
+  year: number
+  name: string
+  status: "pending" | "active" | "counting" | "published"
+  created_at: string
+}
+
+export interface SchoolListItem {
+  id: string
+  name: string
+  code: string
+  email_suffixes: string[]
+  verification_questions: Array<{ question: string; type: string }>
+  is_active: boolean
+  created_at: string
+}
+
+export interface AwardListItem {
+  id: string
+  name: string
+  category: "mandatory" | "optional" | "entertainment"
+  score_config: ScoreConfig
+  display_order: number
+  session_id: string
+  school_id?: string
+  nominee_count: number
+}
+
+export interface NomineeListItem {
+  id: string
+  name: string
+  cover_image_key?: string
+  cover_image_url?: string | null
+  description?: string
+  display_order: number
+  award_id: string
+}
+
+export interface VoteItemListItem {
+  id: string
+  user_nickname: string
+  school_name: string
+  award_name: string
+  nominee_name: string
+  score: number
+  ip_address: string
+  updated_at: string
+}
+
+export interface UserListItem {
+  id: string
+  nickname: string
+  email?: string
+  role: "voter" | "school_admin" | "super_admin"
+  school_name?: string
+  is_guest: boolean
+  created_at: string
+}
+
 export const api = {
   schools: {
     list: () => request<School[]>("/schools"),
@@ -179,6 +247,171 @@ export const api = {
       request<VotingSession>(`/admin/sessions/${id}/status`, {
         method: "PATCH",
         body: JSON.stringify({ status }),
+      }),
+    // Sessions
+    listSessions: (params?: { page?: number; page_size?: number; q?: string }) => {
+      const query = new URLSearchParams()
+      if (params?.page) query.set("page", params.page.toString())
+      if (params?.page_size) query.set("page_size", params.page_size.toString())
+      if (params?.q) query.set("q", params.q)
+      return request<PaginatedResponse<SessionListItem>>(
+        `/admin/sessions?${query.toString()}`
+      )
+    },
+    createSession: (data: { year: number; name: string; status?: string }) =>
+      request<{ id: string }>("/admin/sessions", {
+        method: "POST",
+        body: JSON.stringify(data),
+      }),
+    getSession: (id: string) => request<VotingSession>(`/admin/sessions/${id}`),
+    updateSession: (
+      id: string,
+      data: { year?: number; name?: string; status?: string }
+    ) =>
+      request<VotingSession>(`/admin/sessions/${id}`, {
+        method: "PUT",
+        body: JSON.stringify(data),
+      }),
+    deleteSession: (id: string) =>
+      request<void>(`/admin/sessions/${id}`, { method: "DELETE" }),
+    // Schools
+    listSchools: (params?: { page?: number; page_size?: number; q?: string }) => {
+      const query = new URLSearchParams()
+      if (params?.page) query.set("page", params.page.toString())
+      if (params?.page_size) query.set("page_size", params.page_size.toString())
+      if (params?.q) query.set("q", params.q)
+      return request<PaginatedResponse<SchoolListItem>>(
+        `/admin/schools?${query.toString()}`
+      )
+    },
+    createSchool: (data: {
+      name: string
+      code: string
+      email_suffixes?: string[]
+      verification_questions?: Array<{ question: string; type: string }>
+      is_active?: boolean
+    }) =>
+      request<{ id: string }>("/admin/schools", {
+        method: "POST",
+        body: JSON.stringify(data),
+      }),
+    updateSchool: (
+      id: string,
+      data: {
+        name?: string
+        code?: string
+        email_suffixes?: string[]
+        verification_questions?: Array<{ question: string; type: string }>
+        is_active?: boolean
+      }
+    ) =>
+      request<SchoolListItem>(`/admin/schools/${id}`, {
+        method: "PUT",
+        body: JSON.stringify(data),
+      }),
+    deleteSchool: (id: string) =>
+      request<void>(`/admin/schools/${id}`, { method: "DELETE" }),
+    // Awards
+    listAwards: (params?: { session_id?: string; page?: number; page_size?: number }) => {
+      const query = new URLSearchParams()
+      if (params?.session_id) query.set("session_id", params.session_id)
+      if (params?.page) query.set("page", params.page.toString())
+      if (params?.page_size) query.set("page_size", params.page_size.toString())
+      return request<PaginatedResponse<AwardListItem>>(
+        `/admin/awards?${query.toString()}`
+      )
+    },
+    createAward: (data: {
+      session_id: string
+      name: string
+      category: string
+      score_config: ScoreConfig
+      display_order?: number
+      school_id?: string
+    }) =>
+      request<{ id: string }>("/admin/awards", {
+        method: "POST",
+        body: JSON.stringify(data),
+      }),
+    updateAward: (
+      id: string,
+      data: {
+        name?: string
+        category?: string
+        score_config?: ScoreConfig
+        display_order?: number
+        session_id?: string
+        school_id?: string
+      }
+    ) =>
+      request<AwardListItem>(`/admin/awards/${id}`, {
+        method: "PUT",
+        body: JSON.stringify(data),
+      }),
+    deleteAward: (id: string) =>
+      request<void>(`/admin/awards/${id}`, { method: "DELETE" }),
+    // Nominees
+    listNominees: (params: { award_id: string; page?: number; page_size?: number }) => {
+      const query = new URLSearchParams()
+      query.set("award_id", params.award_id)
+      if (params.page) query.set("page", params.page.toString())
+      if (params.page_size) query.set("page_size", params.page_size.toString())
+      return request<PaginatedResponse<NomineeListItem>>(
+        `/admin/nominees?${query.toString()}`
+      )
+    },
+    createNominee: (data: {
+      award_id: string
+      name: string
+      cover_image_key?: string
+      description?: string
+      display_order?: number
+    }) =>
+      request<{ id: string }>("/admin/nominees", {
+        method: "POST",
+        body: JSON.stringify(data),
+      }),
+    updateNominee: (
+      id: string,
+      data: {
+        name?: string
+        cover_image_key?: string
+        description?: string
+        display_order?: number
+      }
+    ) =>
+      request<NomineeListItem>(`/admin/nominees/${id}`, {
+        method: "PUT",
+        body: JSON.stringify(data),
+      }),
+    deleteNominee: (id: string) =>
+      request<void>(`/admin/nominees/${id}`, { method: "DELETE" }),
+    // Vote Items
+    listVoteItems: (params: { session_id: string; page?: number; page_size?: number }) => {
+      const query = new URLSearchParams()
+      query.set("session_id", params.session_id)
+      if (params.page) query.set("page", params.page.toString())
+      if (params.page_size) query.set("page_size", params.page_size.toString())
+      return request<PaginatedResponse<VoteItemListItem>>(
+        `/admin/vote-items?${query.toString()}`
+      )
+    },
+    deleteVoteItem: (id: string) =>
+      request<void>(`/admin/vote-items/${id}`, { method: "DELETE" }),
+    // Users
+    listUsers: (params?: { page?: number; page_size?: number; q?: string }) => {
+      const query = new URLSearchParams()
+      if (params?.page) query.set("page", params.page.toString())
+      if (params?.page_size) query.set("page_size", params.page_size.toString())
+      if (params?.q) query.set("q", params.q)
+      return request<PaginatedResponse<UserListItem>>(
+        `/admin/users?${query.toString()}`
+      )
+    },
+    patchUserRole: (id: string, role: "voter" | "school_admin" | "super_admin") =>
+      request<{ id: string; role: string }>(`/admin/users/${id}/role`, {
+        method: "PATCH",
+        body: JSON.stringify({ role }),
       }),
   },
   sessions: {

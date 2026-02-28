@@ -173,33 +173,33 @@
 
 ## 模块 C：登录注册页面（Frontend）
 
-- [ ] **C1**. `lib/api.ts`：在统一 fetch wrapper 中新增 401 拦截逻辑
+- [x] **- [ ] **C1**. `lib/api.ts`：在统一 fetch wrapper 中新增 401 拦截逻辑
   - 检测 HTTP 401 → `localStorage.removeItem('access_token')` + `removeItem('refresh_token')`
   - `router.push('/auth/login?next=' + encodeURIComponent(location.pathname + location.search))`
   - 抛出 error 以终止请求链
   - 注：需要在 wrapper 中注入 router（通过参数或模块级 import `next/navigation`）
 
-- [ ] **C2**. `lib/api.ts`：确认 `api.auth.login(email, password)` 方法存在（调用 `POST /api/v1/auth/login`），若无则新增；成功后将 token 写入 localStorage
+- [x] **- [ ] **C2**. `lib/api.ts`：确认 `api.auth.login(email, password)` 方法存在（调用 `POST /api/v1/auth/login`），若无则新增；成功后将 token 写入 localStorage
 
-- [ ] **C3**. 创建 `app/auth/login/page.tsx`（客户端组件）
+- [x] **- [ ] **C3**. 创建 `app/auth/login/page.tsx`（客户端组件）
   - 表单字段：email（input type=email）+ 密码（input type=password）
   - 提交：调用 `api.auth.login()`，成功后 `router.push(next ?? '/')`（next 从 `useSearchParams()` 读取）
   - 错误：在表单下方显示错误信息
   - 样式：shadcn/ui Card + Form + Input + Button，居中布局
 
-- [ ] **C4**. 创建 `app/auth/register/page.tsx`（客户端组件）
+- [x] **- [ ] **C4**. 创建 `app/auth/register/page.tsx`（客户端组件）
   - 说明文字：告知用户注册即升级 Guest → 正式用户（需先通过验证流程）
   - 若已有 token（已是 guest）：显示邮箱验证表单，调用 `POST /api/v1/auth/send-code` + `POST /api/v1/auth/verify-email` + 设置密码（`POST /api/v1/auth/upgrade`）
   - 若无 token：提示"请先完成投票验证以创建账户"，显示"去投票"链接
   - 完成后跳转到 `/`
 
-- [ ] **C5**. `app/layout.tsx`（或 `components/layout/AdminNavLink.tsx`）：新增顶栏管理入口
+- [x] **- [ ] **C5**. `app/layout.tsx`（或 `components/layout/AdminNavLink.tsx`）：新增顶栏管理入口
   - 创建客户端子组件 `<AdminNavLink />`，内部调用 `api.auth.me()`
   - 若 role ∈ {school_admin, super_admin}：渲染"管理后台"链接，`href="/admin/session"`
   - 若未登录或 role=voter：不渲染
   - 外层用 `<Suspense fallback={null}>` 包裹
 
-- [ ] **C6**. `app/layout.tsx`（顶栏）：新增登出按钮
+- [x] **- [ ] **C6**. `app/layout.tsx`（顶栏）：新增登出按钮
   - 仅在已登录时显示（role 任意）
   - 点击：`localStorage.removeItem('access_token')` + `removeItem('refresh_token')` + `router.push('/auth/login')`
 
@@ -207,9 +207,9 @@
 
 ## 模块 D：路由重构（Frontend）
 
-- [ ] **D1**. 创建目录 `app/session/[year]/vote/` 和 `app/session/[year]/results/`
+- [x] **- [ ] **D1**. 创建目录 `app/session/[year]/vote/` 和 `app/session/[year]/results/`
 
-- [ ] **D2**. 创建 `app/session/[year]/vote/page.tsx`（客户端组件）
+- [x] **- [ ] **D2**. 创建 `app/session/[year]/vote/page.tsx`（客户端组件）
   - 从 `useParams()` 读取 `year`
   - `useEffect([year])`：
     1. `parseInt(year)` 为 NaN → 调用 `api.sessions.current()`，`router.replace('/session/{year}/vote')`
@@ -218,26 +218,26 @@
     4. 若无 active session → 显示"暂无进行中的投票"提示
   - 其余 JSX 与原 `app/vote/page.tsx` 一致（直接复用 VoteFlow 子组件）
 
-- [ ] **D3**. `app/vote/page.tsx`：改为重定向逻辑
+- [x] **- [ ] **D3**. `app/vote/page.tsx`：改为重定向逻辑
   - 调用 `api.sessions.current()` 获取 year
   - `router.replace('/session/{year}/vote')`
   - 加载时显示 loading spinner
 
-- [ ] **D4**. 创建 `app/session/[year]/results/page.tsx`：骨架页
+- [x] **- [ ] **D4**. 创建 `app/session/[year]/results/page.tsx`：骨架页
   - 显示"结果尚未公布"静态文案（`<p>` + shadcn Typography）
   - 不调用任何 API
 
-- [ ] **D5**. 检查 `useVoteStore` 是否有 `reset()` 方法，若无则新增（清除所有 session/school/vote 状态，保留 store 接口稳定）
+- [x] **- [ ] **D5**. 检查 `useVoteStore` 是否有 `reset()` 方法，若无则新增（清除所有 session/school/vote 状态，保留 store 接口稳定）
 
 ---
 
 ## 模块 E：投票页提名封面（Frontend + Backend）
 
-- [ ] **E1**. 后端 `internal/handler/award.go`（`GET /api/v1/awards` 的 nominee 序列化处）：在 nominee 响应对象中新增 `cover_image_url` 字段，调用 `buildCoverURL(cfg, nominee.CoverImageKey)`
+- [x] **- [ ] **E1**. 后端 `internal/handler/award.go`（`GET /api/v1/awards` 的 nominee 序列化处）：在 nominee 响应对象中新增 `cover_image_url` 字段，调用 `buildCoverURL(cfg, nominee.CoverImageKey)`
 
-- [ ] **E2**. `lib/api.ts`：`Nominee` 类型新增 `cover_image_url?: string | null` 字段
+- [x] **- [ ] **E2**. `lib/api.ts`：`Nominee` 类型新增 `cover_image_url?: string | null` 字段
 
-- [ ] **E3**. `app/vote/steps/AwardCard.tsx`：在每个提名旁渲染封面
+- [x] **- [ ] **E3**. `app/vote/steps/AwardCard.tsx`：在每个提名旁渲染封面
   - 若 `cover_image_url` 不为 null：`<img src={cover_image_url} className="w-10 h-10 rounded object-cover" />`
   - 若为 null：渲染 SVG 占位符（40×40，灰色背景 + 图片图标）
 
@@ -245,7 +245,7 @@
 
 ## 模块 F：Verify 注册引导（Frontend）
 
-- [ ] **F1**. `app/vote/steps/Verify.tsx`：在提交按钮上方插入以下 JSX（精确实现，见 design.md D17）：
+- [x] **- [ ] **F1**. `app/vote/steps/Verify.tsx`：在提交按钮上方插入以下 JSX（精确实现，见 design.md D17）：
   ```tsx
   <p className="text-xs text-muted-foreground text-center mt-2">
     你也可以选择
@@ -263,40 +263,40 @@
 
 ### G0: 基础设施
 
-- [ ] **G0a**. 安装依赖：`bun add @tanstack/react-table`
+- [x] **G0a**. 安装依赖：`bun add @tanstack/react-table`
 
-- [ ] **G0b**. 创建 `components/admin/data-table.tsx`：通用 DataTable 组件
+- [x] **G0b**. 创建 `components/admin/data-table.tsx`：通用 DataTable 组件
   - Props: `columns: ColumnDef<TData>[]`, `data: TData[]`, `total: number`, `page: number`, `pageSize: number`, `onPageChange`, `onPageSizeChange`, `searchValue?`, `onSearchChange?`
   - 功能：分页控件（上一页/下一页/页码显示）、全局搜索 input、行多选（checkbox 列）
   - 不含业务逻辑，仅 UI
 
-- [ ] **G0c**. 创建 `components/admin/tag-input.tsx`：Tag Input 组件
+- [x] **G0c**. 创建 `components/admin/tag-input.tsx`：Tag Input 组件
   - Props: `value: string[]`, `onChange: (v: string[]) => void`, `placeholder?`
   - 回车或逗号触发添加；每个 tag 有 × 按钮删除
 
-- [ ] **G0d**. 创建 `components/admin/repeater-field.tsx`：可重复行编辑器
+- [x] **G0d**. 创建 `components/admin/repeater-field.tsx`：可重复行编辑器
   - 用于 verification_questions：`value: {question:string, type:string}[]`, `onChange`
   - 每行：文本 input（题目）+ Select（类型：input/select）+ 删除行按钮
   - 底部"添加一行"按钮
 
-- [ ] **G0e**. 创建 `components/admin/kv-editor.tsx`：Key-Value 对编辑器
+- [x] **G0e**. 创建 `components/admin/kv-editor.tsx`：Key-Value 对编辑器
   - 用于 score_config.max_count：`value: Record<string,number>`, `onChange`
   - 每行：key input + value number input + 删除按钮；底部"添加"按钮
 
-- [ ] **G0f**. 创建 `components/admin/searchable-select.tsx`：带搜索 Combobox
+- [x] **G0f**. 创建 `components/admin/searchable-select.tsx`：带搜索 Combobox
   - 基于 shadcn Popover + Command + CommandInput 实现
   - Props: `options: {value:string, label:string}[]`, `value`, `onChange`, `placeholder?`
 
 ### G1: 管理后台布局
 
-- [ ] **G1**. `app/admin/layout.tsx`：完善 Tab 导航
+- [x] **G1**. `app/admin/layout.tsx`：完善 Tab 导航
   - Tab 顺序（共 6 个）：投票会话 / 学校管理 / 奖项管理 / 投票数据 / 用户管理 / 数据导出
   - 使用 shadcn Tabs 组件；Tab 切换通过 URL pathname 联动（`href="/admin/session"` 等）
   - 保护：layout 顶部调用 `api.auth.me()`，role 非 admin → redirect `/auth/login`
 
 ### G2: 投票会话管理页
 
-- [ ] **G2**. `app/admin/session/page.tsx`（DataTable + 增删改）
+- [x] **G2**. `app/admin/session/page.tsx`（DataTable + 增删改）
   - URL 状态：`?page=1&page_size=20&q=`
   - 列：年份 / 名称 / 状态（Badge）/ 创建时间 / 操作（编辑/删除）
   - "新建会话"按钮 → Dialog，表单字段：year（number input）、name（text）、status（Select：pending/active/counting/published）
@@ -306,7 +306,7 @@
 
 ### G3: 学校管理页
 
-- [ ] **G3**. `app/admin/schools/page.tsx`（DataTable + 编辑/停用）
+- [x] **G3**. `app/admin/schools/page.tsx`（DataTable + 编辑/停用）
   - URL 状态：`?page=1&page_size=20&q=`
   - 列：名称 / 编码 / 邮箱后缀数量 / 状态（is_active）/ 操作（编辑/停用）
   - 编辑 Dialog 字段：
@@ -320,7 +320,7 @@
 
 ### G4: 奖项管理页
 
-- [ ] **G4**. `app/admin/awards/page.tsx`（Session 选择器 + DataTable + Sheet Nominee 管理）
+- [x] **G4**. `app/admin/awards/page.tsx`（Session 选择器 + DataTable + Sheet Nominee 管理）
   - 页面顶部：Session 选择器（SearchableSelect，显示 `{year} - {name}`，URL 参数 `?session_id=`）
   - Award 列：名称 / 分类 Badge / 提名数量 / 排序 / 操作（编辑/删除/管理提名）
   - 新建/编辑 Award Dialog 字段：
@@ -338,7 +338,7 @@
 
 ### G5: 投票数据管理页
 
-- [ ] **G5**. `app/admin/votes/page.tsx`（Session 选择器 + DataTable + 删除）
+- [x] **G5**. `app/admin/votes/page.tsx`（Session 选择器 + DataTable + 删除）
   - 页面顶部：Session 选择器（与 G4 相同逻辑）
   - 列：用户昵称 / 学校 / 奖项 / 提名 / 分数 / IP / 更新时间 / 操作
   - 操作列：仅 super_admin 显示"删除"按钮，AlertDialog 确认后调用 `DELETE /api/v1/admin/vote-items/:id`
@@ -346,7 +346,7 @@
 
 ### G6: 用户管理页
 
-- [ ] **G6**. `app/admin/users/page.tsx`（DataTable + 修改角色）
+- [x] **G6**. `app/admin/users/page.tsx`（DataTable + 修改角色）
   - URL 状态：`?page=1&page_size=20&q=`
   - 列：昵称 / 邮箱 / 角色 Badge / 学校名 / 类型（Guest/正式）/ 注册时间 / 操作（修改角色）
   - 修改角色 Dialog：SearchableSelect（voter/school_admin/super_admin），提交调用 `PATCH /api/v1/admin/users/:id/role`
@@ -354,7 +354,7 @@
 
 ### G7: 数据导出页
 
-- [ ] **G7**. `app/admin/export/page.tsx`：保持现有功能（CSV 下载），确保与新 Tab 结构集成
+- [x] **G7**. `app/admin/export/page.tsx`：保持现有功能（CSV 下载），确保与新 Tab 结构集成
   - 若已有 export 页：检查路由和 Tab 链接是否正确，无需大改
 
 ---
