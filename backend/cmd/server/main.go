@@ -59,7 +59,7 @@ func main() {
 	voteH := handler.NewVoteHandler(voteSvc)
 	schoolH := handler.NewSchoolHandler(db)
 	awardH := handler.NewAwardHandler(db)
-	adminH := handler.NewAdminHandler(db)
+	adminH := handler.NewAdminHandler(db, cfg)
 
 	e := echo.New()
 	e.HideBanner = true
@@ -117,7 +117,30 @@ func main() {
 	admin := v1.Group("/admin", jwtMW, apimw.RequireRole("school_admin", "super_admin"))
 	admin.PATCH("/sessions/:id/status", adminH.PatchSessionStatus)
 	admin.GET("/votes/export", adminH.ExportVotes)
+	admin.GET("/awards", adminH.ListAwards)
+	admin.POST("/awards", adminH.CreateAward)
+	admin.PUT("/awards/:id", adminH.UpdateAward)
+	admin.DELETE("/awards/:id", adminH.DeleteAward)
 	admin.POST("/schools", adminH.CreateSchool)
+	admin.PUT("/schools/:id", adminH.UpdateSchool)
+	admin.GET("/vote-items", adminH.ListVoteItems)
+	admin.GET("/nominees", adminH.ListNominees)
+	admin.POST("/nominees", adminH.CreateNominee)
+	admin.PUT("/nominees/:id", adminH.UpdateNominee)
+	admin.DELETE("/nominees/:id", adminH.DeleteNominee)
+
+	// Super admin only
+	adminSuper := v1.Group("/admin", jwtMW, apimw.RequireRole("super_admin"))
+	adminSuper.GET("/sessions", adminH.ListSessions)
+	adminSuper.POST("/sessions", adminH.CreateSession)
+	adminSuper.GET("/sessions/:id", adminH.GetSession)
+	adminSuper.PUT("/sessions/:id", adminH.UpdateSession)
+	adminSuper.DELETE("/sessions/:id", adminH.DeleteSession)
+	adminSuper.GET("/schools", adminH.ListSchools)
+	adminSuper.DELETE("/schools/:id", adminH.DeleteSchool)
+	adminSuper.DELETE("/vote-items/:id", adminH.DeleteVoteItem)
+	adminSuper.GET("/users", adminH.ListUsers)
+	adminSuper.PATCH("/users/:id/role", adminH.PatchUserRole)
 
 	slog.Info("server starting", "port", cfg.ServerPort)
 	if err := e.Start(":" + cfg.ServerPort); err != nil {

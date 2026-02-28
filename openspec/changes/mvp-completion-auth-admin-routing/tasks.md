@@ -58,107 +58,107 @@
 
 ### B1: Session 管理
 
-- [ ] **B1a**. `GET /api/v1/admin/sessions`（super_admin only）
+- [x] **B1a**. `GET /api/v1/admin/sessions`（super_admin only）
   - 分页，支持 `?q=` 按 name 模糊搜索（`ILIKE %q%`）
   - 返回 `{data:[{id,year,name,status,created_at},...], total, page, page_size}`
 
-- [ ] **B1b**. `POST /api/v1/admin/sessions`（super_admin only）
+- [x] **B1b**. `POST /api/v1/admin/sessions`（super_admin only）
   - Body: `{year:int, name:string, status?:string}`
   - status 若提供须为合法枚举值，默认 "pending"
   - 返回 HTTP 201 `{id}`
 
-- [ ] **B1c**. `GET /api/v1/admin/sessions/:id`（super_admin only）
+- [x] **B1c**. `GET /api/v1/admin/sessions/:id`（super_admin only）
   - 返回完整 session 对象；404 if not found
 
-- [ ] **B1d**. `PUT /api/v1/admin/sessions/:id`（super_admin only）
+- [x] **B1d**. `PUT /api/v1/admin/sessions/:id`（super_admin only）
   - Body: `{year?:int, name?:string, status?:string}`（部分更新，忽略零值字段）
   - status 须为合法枚举值；返回更新后完整对象
 
-- [ ] **B1e**. `DELETE /api/v1/admin/sessions/:id`（super_admin only）
+- [x] **B1e**. `DELETE /api/v1/admin/sessions/:id`（super_admin only）
   - 若该 session 存在关联 VoteItem → 返回 HTTP 409 `{"error":"session has existing votes"}`
   - 否则硬删除，返回 HTTP 204
 
 ### B2: School 管理
 
-- [ ] **B2a**. `GET /api/v1/admin/schools`（super_admin only）
+- [x] **B2a**. `GET /api/v1/admin/schools`（super_admin only）
   - 分页，支持 `?q=` 按 name 搜索；返回所有学校（含 is_active=false 的）
   - 字段：`{id, name, code, email_suffixes, verification_questions, is_active, created_at}`
 
-- [ ] **B2b**. `PUT /api/v1/admin/schools/:id`
+- [x] **B2b**. `PUT /api/v1/admin/schools/:id`
   - super_admin：可修改 name, code, email_suffixes, verification_questions, is_active
   - school_admin：仅可修改 verification_questions 和 email_suffixes；其他字段即使在 body 中也忽略；若 id ≠ claims.school_id → 403
   - 返回更新后完整对象
 
-- [ ] **B2c**. `DELETE /api/v1/admin/schools/:id`（super_admin only）
+- [x] **B2c**. `DELETE /api/v1/admin/schools/:id`（super_admin only）
   - 软删除：`SET is_active=false`；返回 HTTP 204
 
 ### B3: Award 管理
 
-- [ ] **B3a**. `GET /api/v1/admin/awards`
+- [x] **B3a**. `GET /api/v1/admin/awards`
   - super_admin：支持 `?session_id=` 过滤，返回该 session 所有 awards（含 nominee 数量）
   - school_admin：强制过滤 school_id=claims.school_id AND category="entertainment"，忽略请求中的 session_id
   - 分页；字段：`{id, name, category, score_config, display_order, session_id, school_id, nominee_count}`
 
-- [ ] **B3b**. `POST /api/v1/admin/awards`
+- [x] **B3b**. `POST /api/v1/admin/awards`
   - super_admin：Body `{session_id, name, category, score_config, display_order?, school_id?}`
   - school_admin：强制 category="entertainment"，school_id=claims.school_id（忽略 body 中的这两个字段）
   - 返回 HTTP 201 `{id}`
 
-- [ ] **B3c**. `PUT /api/v1/admin/awards/:id`
+- [x] **B3c**. `PUT /api/v1/admin/awards/:id`
   - super_admin：可修改所有字段
   - school_admin：先校验 award.school_id=claims.school_id，否则 403；仅可修改 name, score_config, display_order
   - 返回更新后完整对象
 
-- [ ] **B3d**. `DELETE /api/v1/admin/awards/:id`
+- [x] **B3d**. `DELETE /api/v1/admin/awards/:id`
   - super_admin / school_admin（本校娱乐奖）：硬删除，Ent 级联删除关联 Nominee（无 VoteItem 保护，Award 删除时 Nominee 一并删除）
   - 返回 HTTP 204
 
 ### B4: Nominee 管理
 
-- [ ] **B4a**. `GET /api/v1/admin/nominees`
+- [x] **B4a**. `GET /api/v1/admin/nominees`
   - 支持 `?award_id=` 过滤（必填）；分页
   - school_admin：校验 award.school_id=claims.school_id，否则 403
   - 字段：`{id, name, cover_image_key, cover_image_url, description, display_order, award_id}`
 
-- [ ] **B4b**. `POST /api/v1/admin/nominees`
+- [x] **B4b**. `POST /api/v1/admin/nominees`
   - Body: `{award_id, name, cover_image_key?, description?, display_order?}`
   - school_admin：校验 award.school_id=claims.school_id，否则 403
   - 返回 HTTP 201 `{id}`
 
-- [ ] **B4c**. `PUT /api/v1/admin/nominees/:id`
+- [x] **B4c**. `PUT /api/v1/admin/nominees/:id`
   - school_admin：先校验所属 award.school_id=claims.school_id，否则 403
   - 可修改：name, cover_image_key, description, display_order
   - cover_image_key 若含 ".." → 返回 HTTP 400
   - 返回更新后完整对象（含 cover_image_url）
 
-- [ ] **B4d**. `DELETE /api/v1/admin/nominees/:id`
+- [x] **B4d**. `DELETE /api/v1/admin/nominees/:id`
   - 若存在关联 VoteItem → 返回 HTTP 409 `{"error":"nominee has existing votes"}`
   - 否则硬删除，返回 HTTP 204
 
 ### B5: Vote Item 管理
 
-- [ ] **B5a**. `GET /api/v1/admin/vote-items`
+- [x] **B5a**. `GET /api/v1/admin/vote-items`
   - 支持 `?session_id=`（必填）过滤；分页
   - super_admin：返回该 session 所有 vote items
   - school_admin：WHERE school_id=claims.school_id
   - 字段：`{id, user_nickname, school_name, award_name, nominee_name, score, ip_address, updated_at}`
 
-- [ ] **B5b**. `DELETE /api/v1/admin/vote-items/:id`（super_admin only）
+- [x] **B5b**. `DELETE /api/v1/admin/vote-items/:id`（super_admin only）
   - 硬删除；返回 HTTP 204；404 if not found
 
 ### B6: User 管理
 
-- [ ] **B6a**. `GET /api/v1/admin/users`（super_admin only）
+- [x] **B6a**. `GET /api/v1/admin/users`（super_admin only）
   - 分页，支持 `?q=` 按 nickname 或 email 搜索（ILIKE）
   - 字段：`{id, nickname, email, role, school_name, is_guest, created_at}`
 
-- [ ] **B6b**. `PATCH /api/v1/admin/users/:id/role`（super_admin only）
+- [x] **B6b**. `PATCH /api/v1/admin/users/:id/role`（super_admin only）
   - Body: `{role: "voter" | "school_admin" | "super_admin"}`
   - 合法值校验；返回更新后 `{id, role}`
 
 ### B7: 路由注册
 
-- [ ] **B7**. `cmd/server/main.go`（或独立路由文件）：在 admin 路由组注册所有新端点
+- [x] **B7**. `cmd/server/main.go`（或独立路由文件）：在 admin 路由组注册所有新端点
   - 所有新端点统一要求 JWT 中间件
   - 按 D5 配置各端点的 role 检查（`requireSuperAdmin` 或 `requireAdmin` middleware）
   - 新增 Echo Static：`e.Static("/static", cfg.UploadDir)`（在路由注册之前，无需 JWT）
