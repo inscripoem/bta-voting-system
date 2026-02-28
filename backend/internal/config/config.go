@@ -21,6 +21,8 @@ type Config struct {
 	BlobFilePath     string
 	ServerPort       string
 	FrontendURL      string
+	BackendBaseURL   string // Base URL for constructing cover_image_url
+	UploadDir        string // Directory for static file uploads
 }
 
 func Load() (*Config, error) {
@@ -40,6 +42,8 @@ func Load() (*Config, error) {
 		BlobFilePath:     getEnv("BLOB_FILE_PATH", "./uploads"),
 		ServerPort:       getEnv("SERVER_PORT", "8080"),
 		FrontendURL:      getEnv("FRONTEND_URL", "http://localhost:3000"),
+		BackendBaseURL:   getEnv("BACKEND_BASE_URL", "http://localhost:8080"),
+		UploadDir:        getEnv("UPLOAD_DIR", "./uploads"),
 	}
 	return c, nil
 }

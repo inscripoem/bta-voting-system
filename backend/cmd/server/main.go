@@ -1,15 +1,21 @@
 package main
 
 import (
+	"context"
+	"crypto/rand"
+	"log"
 	"log/slog"
+	"math/big"
 	"os"
 
 	"github.com/labstack/echo/v4"
 	echomw "github.com/labstack/echo/v4/middleware"
 	_ "github.com/lib/pq"
+	"golang.org/x/crypto/bcrypt"
 
 	"github.com/inscripoem/bta-voting-system/backend/internal/config"
 	"github.com/inscripoem/bta-voting-system/backend/internal/ent"
+	"github.com/inscripoem/bta-voting-system/backend/internal/ent/user"
 	"github.com/inscripoem/bta-voting-system/backend/internal/handler"
 	apimw "github.com/inscripoem/bta-voting-system/backend/internal/middleware"
 	"github.com/inscripoem/bta-voting-system/backend/internal/service"
@@ -32,6 +38,16 @@ func main() {
 	}
 	defer db.Close()
 
+	ctx := context.Background()
+	if err := db.Schema.Create(ctx); err != nil {
+		slog.Error("schema create failed", "err", err)
+		os.Exit(1)
+	}
+	if err := bootstrapSuperAdmin(ctx, db); err != nil {
+		slog.Error("bootstrap super_admin failed", "err", err)
+		os.Exit(1)
+	}
+
 	// Services
 	jwtSvc := service.NewJWTService(cfg.JWTSecret, cfg.JWTRefreshSecret)
 	emailSvc := service.NewEmailSender(cfg)
@@ -48,10 +64,10 @@ func main() {
 	e := echo.New()
 	e.HideBanner = true
 	e.Use(echomw.RequestLoggerWithConfig(echomw.RequestLoggerConfig{
-		LogStatus: true,
-		LogURI:    true,
-		LogMethod: true,
-		LogError:  true,
+		LogStatus:   true,
+		LogURI:      true,
+		LogMethod:   true,
+		LogError:    true,
 		HandleError: true,
 		LogValuesFunc: func(c echo.Context, v echomw.RequestLoggerValues) error {
 			slog.Info("request",
@@ -108,4 +124,57 @@ func main() {
 		slog.Error("server error", "err", err)
 		os.Exit(1)
 	}
+}
+
+func bootstrapSuperAdmin(ctx context.Context, client *ent.Client) error {
+	count, err := client.User.Query().Where(user.RoleEQ("super_admin")).Count(ctx)
+	if err != nil {
+		return err
+	}
+	if count > 0 {
+		return nil
+	}
+
+	pwd, err := generateRandomPassword(32)
+	if err != nil {
+		return err
+	}
+	hashed, err := bcrypt.GenerateFromPassword([]byte(pwd), bcrypt.DefaultCost)
+	if err != nil {
+		return err
+	}
+
+	_, err = client.User.Create().
+		SetEmail("admin@bta.local").
+		SetNickname("super_admin").
+		SetRole("super_admin").
+		SetIsGuest(false).
+		SetPasswordHash(string(hashed)).
+		Save(ctx)
+	if err != nil {
+		if ent.IsConstraintError(err) {
+			return nil
+		}
+		return err
+	}
+
+	log.Printf("[INIT] super_admin created: email=admin@bta.local password=%s", pwd)
+	return nil
+}
+
+func generateRandomPassword(length int) (string, error) {
+	const letters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+	if length <= 0 {
+		return "", nil
+	}
+	b := make([]byte, length)
+	max := big.NewInt(int64(len(letters)))
+	for i := range b {
+		n, err := rand.Int(rand.Reader, max)
+		if err != nil {
+			return "", err
+		}
+		b[i] = letters[n.Int64()]
+	}
+	return string(b), nil
 }

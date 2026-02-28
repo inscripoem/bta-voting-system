@@ -32,6 +32,11 @@ tasks:
     dir: '{{.BACKEND_DIR}}'
     cmd: go run ./cmd/migrate
 
+  seed:
+    desc: 运行 seed 脚本
+    dir: '{{.BACKEND_DIR}}'
+    cmd: go run ./cmd/seed
+
   test:backend:
     desc: 运行后端测试
     dir: '{{.BACKEND_DIR}}'
