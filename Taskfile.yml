@@ -1,0 +1,38 @@
+version: '3'
+
+vars:
+  BACKEND_DIR: backend
+  FRONTEND_DIR: frontend
+
+tasks:
+  dev:backend:
+    desc: 启动后端开发服务器（Air 热重载）
+    dir: '{{.BACKEND_DIR}}'
+    cmd: go tool air -c .air.toml
+
+  dev:frontend:
+    desc: 启动前端开发服务器
+    dir: '{{.FRONTEND_DIR}}'
+    cmd: bun dev
+
+  docker:build:
+    desc: 构建 Docker 镜像
+    cmd: docker compose build
+
+  docker:up:
+    desc: 启动所有 Docker 服务
+    cmd: docker compose up
+
+  docker:down:
+    desc: 停止所有 Docker 服务
+    cmd: docker compose down
+
+  db:migrate:
+    desc: 运行数据库迁移
+    dir: '{{.BACKEND_DIR}}'
+    cmd: go run ./cmd/migrate
+
+  test:
+    desc: 运行后端测试
+    dir: '{{.BACKEND_DIR}}'
+    cmd: go test ./...
