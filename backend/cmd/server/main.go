@@ -96,7 +96,7 @@ func main() {
 	v1.POST("/auth/send-code", authH.SendCode)
 	v1.POST("/auth/login", authH.Login)
 	v1.POST("/auth/upgrade", authH.Upgrade, jwtMW)
-	v1.GET("/auth/verify-email", authH.VerifyEmail)
+	v1.POST("/auth/verify-email", authH.VerifyEmail, jwtMW)
 
 	// User info (requires JWT)
 	v1.GET("/me", authH.Me, jwtMW)

@@ -212,6 +212,22 @@ func (s *AuthService) findOrCreateGuest(ctx context.Context, nickname string, sc
 	return s.issueTokens(ctx, user)
 }
 
+// VerifyEmailCode verifies an email verification code and updates the user's email.
+func (s *AuthService) VerifyEmailCode(ctx context.Context, userID uuid.UUID, emailAddr, code string) error {
+	s.mu.RLock()
+	entry, ok := s.codes[emailAddr]
+	s.mu.RUnlock()
+	if !ok || entry.code != code || time.Now().After(entry.expiresAt) {
+		return ErrInvalidCode
+	}
+	s.mu.Lock()
+	delete(s.codes, emailAddr)
+	s.mu.Unlock()
+
+	_, err := s.db.User.UpdateOneID(userID).SetEmail(emailAddr).Save(ctx)
+	return err
+}
+
 func (s *AuthService) issueTokens(ctx context.Context, user *ent.User) (access, refresh string, err error) {
 	school, _ := user.QuerySchool().Only(ctx)
 	var schoolIDPtr *uuid.UUID

@@ -11,6 +11,12 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
       ...(init?.headers ?? {}),
     },
   })
+  if (res.status === 401 && typeof window !== "undefined") {
+    clearTokens()
+    const next = encodeURIComponent(window.location.pathname + window.location.search)
+    window.location.href = `/auth/login?next=${next}`
+    throw new APIError(401, "Unauthorized")
+  }
   if (!res.ok) {
     const err = await res.json().catch(() => ({ message: res.statusText }))
     throw new APIError(res.status, (err as { message?: string }).message ?? res.statusText)
@@ -37,6 +43,12 @@ export async function requestBlob(path: string, init?: RequestInit): Promise<Blo
       ...(init?.headers ?? {}),
     },
   })
+  if (res.status === 401 && typeof window !== "undefined") {
+    clearTokens()
+    const next = encodeURIComponent(window.location.pathname + window.location.search)
+    window.location.href = `/auth/login?next=${next}`
+    throw new APIError(401, "Unauthorized")
+  }
   if (!res.ok) {
     const err = await res.json().catch(() => ({ message: res.statusText }))
     throw new APIError(res.status, (err as { message?: string }).message ?? res.statusText)
@@ -107,6 +119,7 @@ export interface UserInfo {
   email?: string
   role: "voter" | "school_admin" | "super_admin"
   school_id?: string
+  school_code?: string
   is_guest: boolean
 }
 
@@ -138,8 +151,18 @@ export const api = {
         method: "POST",
         body: JSON.stringify({ nickname, password }),
       }),
-    upgrade: (email: string) =>
+    upgrade: (password: string) =>
       request<{ message: string }>("/auth/upgrade", {
+        method: "POST",
+        body: JSON.stringify({ password }),
+      }),
+    verifyEmail: (email: string, code: string) =>
+      request<{ message: string }>("/auth/verify-email", {
+        method: "POST",
+        body: JSON.stringify({ email, code }),
+      }),
+    sendUpgradeCode: (email: string) =>
+      request<{ message: string }>("/auth/send-upgrade-code", {
         method: "POST",
         body: JSON.stringify({ email }),
       }),

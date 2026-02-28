@@ -22,6 +22,7 @@ import {
     SheetTrigger,
     SheetTitle,
 } from "@/components/ui/sheet"
+import { NavActions } from "@/components/nav-actions"
 
 interface MenuItem {
   title: string
@@ -113,6 +114,9 @@ export function SiteHeader() {
                     )}
                   </div>
                 ))}
+                <div className="pt-4 border-t">
+                   <NavActions />
+                </div>
               </nav>
             </SheetContent>
           </Sheet>
@@ -153,6 +157,7 @@ export function SiteHeader() {
                 ))}
               </NavigationMenuList>
             </NavigationMenu>
+            <NavActions />
           </nav>
         </div>
       </div>
