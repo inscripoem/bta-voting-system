@@ -364,6 +364,8 @@ func (h *AdminHandler) ExportVotes(c echo.Context) error {
 
 	c.Response().Header().Set("Content-Type", "text/csv; charset=utf-8")
 	c.Response().Header().Set("Content-Disposition", "attachment; filename=votes.csv")
+	// Write UTF-8 BOM so Excel opens the file correctly
+	_, _ = c.Response().Write([]byte{0xEF, 0xBB, 0xBF})
 	w := csv.NewWriter(c.Response())
 	_ = w.Write([]string{"user_nickname", "school", "award", "nominee", "score", "ip_address", "updated_at"})
 	for _, it := range items {

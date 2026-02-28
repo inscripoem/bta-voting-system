@@ -109,6 +109,22 @@ bun run dev
 - **账户升级**：guest 用户通过邮件验证后设置密码，升级为注册账户
 - **管理后台**：管理员切换投票会话状态、管理候选项；school_admin 可导出本校投票数据 CSV
 
+## Spec 体系
+
+平台使用 OpenSpec（`openspec/`）管理需求边界。七个核心能力的约束集位于 `openspec/specs/`：
+
+| 目录 | 能力 |
+|------|------|
+| `user-auth/` | 用户身份体系：Guest 创建、密码登录、JWT 鉴权、角色模型 |
+| `school-verification/` | 学校身份验证：验证题（Path A）、教育邮箱验证码（Path B）|
+| `voting/` | 投票核心：奖项分类、评分约束、草稿自动保存 |
+| `account-management/` | 账户升级：Guest → Registered、邮箱/密码设置 |
+| `admin-management/` | 管理后台：VotingSession 状态机、角色权限边界 |
+| `data-export/` | 数据导出：CSV 格式、权限分层 |
+| `results-display/` | 结果展示：published 门控、奖项聚合得分 |
+
+新功能开发前，请阅读对应 `spec.md` 了解现有约束边界。详见 [CONTRIBUTING.md](./CONTRIBUTING.md)。
+
 ## Smoke Test 清单
 
 - [ ] 选择学校 → 验证题验证 → 创建 guest → 进入投票页
