@@ -40,7 +40,7 @@ export default function AdminSessionPage() {
     setUpdateError(null)
     setUpdating(true)
     try {
-      const updated = await api.admin.patchSessionStatus("current", status)
+      const updated = await api.admin.patchSessionStatus(session.id, status)
       setSession(updated)
     } catch (err: unknown) {
       if (err instanceof APIError) {

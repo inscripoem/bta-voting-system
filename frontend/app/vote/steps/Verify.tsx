@@ -50,6 +50,10 @@ export function Verify() {
         code: method === "email" ? code : undefined,
       })
       if ("conflict" in res) {
+        if (res.conflict === "different_school") {
+          setError("该昵称已被其他学校使用，请换一个昵称。")
+          return
+        }
         setConflict(res.conflict, nickname.trim())
         return
       }
