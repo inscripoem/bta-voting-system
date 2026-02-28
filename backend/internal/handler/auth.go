@@ -1,12 +1,11 @@
 package handler
 
 import (
-	"fmt"
 	"net/http"
-	"strings"
 
 	"github.com/labstack/echo/v4"
 
+	entuser "github.com/inscripoem/bta-voting-system/backend/internal/ent/user"
 	apimw "github.com/inscripoem/bta-voting-system/backend/internal/middleware"
 	"github.com/inscripoem/bta-voting-system/backend/internal/service"
 )

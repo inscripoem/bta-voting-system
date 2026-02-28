@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import Link from "next/link"
 import { api, APIError, saveTokens } from "@/lib/api"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
@@ -153,9 +154,19 @@ export function Verify() {
 
         {error && <p className="text-sm text-destructive">{error}</p>}
 
-        <Button className="w-full" onClick={handleSubmit} disabled={loading}>
-          {loading ? "验证中…" : "确认"}
-        </Button>
+        <div className="space-y-2">
+          <Button className="w-full" onClick={handleSubmit} disabled={loading}>
+            {loading ? "验证中…" : "确认"}
+          </Button>
+
+          <p className="text-xs text-muted-foreground text-center mt-2">
+            你也可以选择
+            <br />
+            <Link href="/auth/register" className="underline">
+              注册正式用户，保留历年记录
+            </Link>
+          </p>
+        </div>
       </CardContent>
     </Card>
   )

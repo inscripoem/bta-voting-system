@@ -44,7 +44,31 @@ export function AwardCard({ award, votes, onVote }: Props) {
           const current = votes[nominee.id]
           const canSupport = supportCount < maxSupport || current === 1
           return (
-            <div key={nominee.id} className="flex items-center gap-2">
+            <div key={nominee.id} className="flex items-center gap-3">
+              {nominee.cover_image_url ? (
+                <img
+                  src={nominee.cover_image_url}
+                  alt={nominee.name}
+                  className="w-10 h-10 rounded object-cover shrink-0"
+                />
+              ) : (
+                <div className="w-10 h-10 rounded bg-muted flex items-center justify-center shrink-0">
+                  <svg
+                    className="w-5 h-5 text-muted-foreground/50"
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <rect width="18" height="18" x="3" y="3" rx="2" ry="2" />
+                    <circle cx="9" cy="9" r="2" />
+                    <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21" />
+                  </svg>
+                </div>
+              )}
               <span className="text-sm flex-1 truncate min-w-0">{nominee.name}</span>
               <div className="flex gap-1 shrink-0">
                 {[1, 0, -1].map((score) => {

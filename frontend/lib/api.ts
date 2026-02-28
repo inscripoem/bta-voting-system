@@ -83,6 +83,7 @@ export interface Nominee {
   id: string
   name: string
   cover_image_key?: string
+  cover_image_url?: string | null
   description?: string
   display_order: number
 }

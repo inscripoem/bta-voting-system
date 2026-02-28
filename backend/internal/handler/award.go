@@ -7,6 +7,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 
+	"github.com/inscripoem/bta-voting-system/backend/internal/config"
 	"github.com/inscripoem/bta-voting-system/backend/internal/ent"
 	entaward "github.com/inscripoem/bta-voting-system/backend/internal/ent/award"
 	entnominee "github.com/inscripoem/bta-voting-system/backend/internal/ent/nominee"
@@ -15,11 +16,12 @@ import (
 )
 
 type AwardHandler struct {
-	db *ent.Client
+	db  *ent.Client
+	cfg *config.Config
 }
 
-func NewAwardHandler(db *ent.Client) *AwardHandler {
-	return &AwardHandler{db: db}
+func NewAwardHandler(db *ent.Client, cfg *config.Config) *AwardHandler {
+	return &AwardHandler{db: db, cfg: cfg}
 }
 
 // List returns awards + nominees for the current active/published session.
@@ -76,11 +78,12 @@ func (h *AwardHandler) List(c echo.Context) error {
 	}
 
 	type nomineeResp struct {
-		ID           string `json:"id"`
-		Name         string `json:"name"`
-		CoverImageKey string `json:"cover_image_key,omitempty"`
-		Description  string `json:"description,omitempty"`
-		DisplayOrder int    `json:"display_order"`
+		ID            string  `json:"id"`
+		Name          string  `json:"name"`
+		CoverImageKey string  `json:"cover_image_key,omitempty"`
+		CoverImageURL *string `json:"cover_image_url,omitempty"`
+		Description   string  `json:"description,omitempty"`
+		DisplayOrder  int     `json:"display_order"`
 	}
 	type awardResp struct {
 		ID           string        `json:"id"`
@@ -101,6 +104,7 @@ func (h *AwardHandler) List(c echo.Context) error {
 				ID:            n.ID.String(),
 				Name:          n.Name,
 				CoverImageKey: n.CoverImageKey,
+				CoverImageURL: buildCoverURL(h.cfg, n.CoverImageKey),
 				Description:   n.Description,
 				DisplayOrder:  n.DisplayOrder,
 			})

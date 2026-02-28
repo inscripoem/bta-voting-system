@@ -58,7 +58,7 @@ func main() {
 	authH := handler.NewAuthHandler(authSvc, cfg.FrontendURL)
 	voteH := handler.NewVoteHandler(voteSvc)
 	schoolH := handler.NewSchoolHandler(db)
-	awardH := handler.NewAwardHandler(db)
+	awardH := handler.NewAwardHandler(db, cfg)
 	adminH := handler.NewAdminHandler(db, cfg)
 
 	e := echo.New()
