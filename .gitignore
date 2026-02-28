@@ -1,5 +1,6 @@
 # Go
 backend/bin/
+backend/tmp/
 backend/server
 backend/migrate
 *.exe
