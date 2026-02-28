@@ -11,19 +11,19 @@ services:
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U bta"]
+      test: ["CMD-SHELL", "pg_isready -U bta -d bta_voting"]
       interval: 5s
       timeout: 5s
       retries: 5
 
-  backend:
-    build: ./backend
-    env_file: ./backend/.env
-    ports:
-      - "8080:8080"
-    depends_on:
-      db:
-        condition: service_healthy
+  # backend:
+  #   build: ./backend
+  #   env_file: ./backend/.env
+  #   ports:
+  #     - "8080:8080"
+  #   depends_on:
+  #     db:
+  #       condition: service_healthy
 
 volumes:
   pgdata:
