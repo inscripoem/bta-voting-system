@@ -17,6 +17,7 @@ export function VoteForm() {
   const [showAllEntertainment, setShowAllEntertainment] = useState(false)
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState("")
+  const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null)
 
   useEffect(() => {
     if (!school || !session) return
@@ -35,6 +36,7 @@ export function VoteForm() {
     setSaveError("")
     try {
       await api.vote.upsertItems(session.id, [{ nominee_id: nomineeId, score }])
+      setLastSavedAt(new Date())
     } catch {
       setSaveError("保存失败，请重试")
     } finally {
@@ -54,7 +56,13 @@ export function VoteForm() {
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-semibold">投票</h1>
         <span className="text-xs text-muted-foreground">
-          {saving ? "保存中…" : saveError ? <span className="text-destructive">{saveError}</span> : "自动保存"}
+          {saving
+            ? "保存中…"
+            : saveError
+            ? <span className="text-destructive">{saveError}</span>
+            : lastSavedAt
+            ? `保存于 ${lastSavedAt.toLocaleTimeString("zh-CN", { hour: "2-digit", minute: "2-digit" })}`
+            : null}
         </span>
       </div>
 

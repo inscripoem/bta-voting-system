@@ -14,11 +14,12 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { useVoteStore } from "@/hooks/useVoteStore"
+import { useAuthStore } from "@/hooks/useAuthStore"
 
 export function Verify() {
-  const { school, schoolDetail, goTo, setConflict } = useVoteStore()
+  const { school, schoolDetail, pendingNickname, goTo, setConflict } = useVoteStore()
+  const refreshAuth = useAuthStore((s) => s.refresh)
   const [method, setMethod] = useState<"question" | "email">("question")
-  const [nickname, setNickname] = useState("")
   const [answer, setAnswer] = useState("")
   const [emailLocal, setEmailLocal] = useState("")
   const [emailSuffix, setEmailSuffix] = useState(schoolDetail?.email_suffixes?.[0] ?? "")
@@ -46,15 +47,12 @@ export function Verify() {
   }
 
   async function handleSubmit() {
-    if (!school || !nickname.trim()) {
-      setError("请输入昵称")
-      return
-    }
+    if (!school) return
     setLoading(true)
     setError("")
     try {
       const res = await api.auth.guest({
-        nickname: nickname.trim(),
+        nickname: pendingNickname,
         school_code: school.code,
         method,
         answer: method === "question" ? answer : undefined,
@@ -66,10 +64,11 @@ export function Verify() {
           setError("该昵称已被其他学校使用，请换一个昵称。")
           return
         }
-        setConflict(res.conflict, nickname.trim())
+        setConflict(res.conflict, pendingNickname)
         return
       }
       saveTokens(res.access_token, res.refresh_token)
+      await refreshAuth()
       goTo("vote")
     } catch (err) {
       setError(err instanceof APIError ? err.message : "验证失败，请重试")
@@ -85,7 +84,7 @@ export function Verify() {
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => goTo("select-school")}
+            onClick={() => goTo("nickname")}
             disabled={loading}
             className="-ml-2 shrink-0"
           >
@@ -93,22 +92,11 @@ export function Verify() {
           </Button>
           <div>
             <CardTitle>验证身份</CardTitle>
-            <CardDescription>{school?.name}</CardDescription>
+            <CardDescription>{school?.name} · {pendingNickname}</CardDescription>
           </div>
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
-        {/* Nickname */}
-        <div className="space-y-1">
-          <label className="text-sm font-medium">昵称</label>
-          <input
-            className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-            placeholder="设置你的唯一昵称"
-            value={nickname}
-            onChange={(e) => setNickname(e.target.value)}
-          />
-        </div>
-
         {/* Method toggle */}
         <div className="flex gap-2">
           <Button

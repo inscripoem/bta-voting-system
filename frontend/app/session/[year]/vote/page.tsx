@@ -3,8 +3,10 @@
 import { useEffect, useState } from "react"
 import { useRouter, useParams } from "next/navigation"
 import { useVoteStore } from "@/hooks/useVoteStore"
+import { useAuthStore } from "@/hooks/useAuthStore"
 import { api } from "@/lib/api"
 import { SelectSchool } from "@/app/vote/steps/SelectSchool"
+import { Nickname } from "@/app/vote/steps/Nickname"
 import { Verify } from "@/app/vote/steps/Verify"
 import { VoteForm } from "@/app/vote/steps/VoteForm"
 import { NicknameConflict } from "@/app/vote/steps/NicknameConflict"
@@ -14,6 +16,7 @@ export default function SessionVotePage() {
   const router = useRouter()
   const yearParam = params.year as string
   const store = useVoteStore()
+  const refreshAuth = useAuthStore((s) => s.refresh)
   const [loading, setLoading] = useState(true)
   const [adminNoSchool, setAdminNoSchool] = useState(false)
 
@@ -50,6 +53,7 @@ export default function SessionVotePage() {
       // If already logged in as a registered user, skip verification flow
       try {
         const me = await api.me.get()
+        refreshAuth()
         if (!me.is_guest) {
           if (me.school_code) {
             const schoolDetail = await api.schools.get(me.school_code)
@@ -98,6 +102,7 @@ export default function SessionVotePage() {
   return (
     <div className="container py-8 max-w-3xl mx-auto px-4">
       {store.step === "select-school" && <SelectSchool />}
+      {store.step === "nickname" && <Nickname />}
       {store.step === "verify" && <Verify />}
       {store.step === "vote" && <VoteForm />}
       {store.step === "conflict" && <NicknameConflict />}

@@ -204,11 +204,34 @@ export const api = {
     get: (code: string) => request<SchoolDetail>(`/schools/${code}`),
   },
   auth: {
-    sendCode: (email: string, schoolCode: string) =>
+    sendCode: (email: string, schoolCode?: string) =>
       request<{ message: string }>("/auth/send-code", {
         method: "POST",
-        body: JSON.stringify({ email, school_code: schoolCode }),
+        body: JSON.stringify({ email, ...(schoolCode ? { school_code: schoolCode } : {}) }),
       }),
+    register: async (body: {
+      nickname: string
+      school_code: string
+      method: "question" | "email"
+      answer?: string
+      email?: string
+      code?: string
+      password: string
+    }): Promise<TokenResponse | ConflictResponse> => {
+      const res = await fetch(`${BASE}/auth/register`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      })
+      if (res.status === 409) {
+        return res.json() as Promise<ConflictResponse>
+      }
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ message: res.statusText }))
+        throw new APIError(res.status, (err as { message?: string }).message ?? res.statusText)
+      }
+      return res.json() as Promise<TokenResponse>
+    },
     guest: async (body: {
       nickname: string
       school_code: string

@@ -1,37 +1,36 @@
 "use client"
 
-import { useEffect, useState, Suspense } from "react"
+import { useEffect, Suspense } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { api, clearTokens, UserInfo } from "@/lib/api"
+import { clearTokens } from "@/lib/api"
 import { Button } from "@/components/ui/button"
 import { navigationMenuTriggerStyle } from "@/components/ui/navigation-menu"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
+import { useAuthStore } from "@/hooks/useAuthStore"
 
 export function NavActions() {
   const router = useRouter()
-  const [user, setUser] = useState<UserInfo | null>(null)
-  const [loading, setLoading] = useState(true)
+  const { user, loading, refresh, clear } = useAuthStore()
 
   useEffect(() => {
-    async function fetchUser() {
-      try {
-        const data = await api.me.get()
-        setUser(data)
-      } catch (err) {
-        setUser(null)
-      } finally {
-        setLoading(false)
-      }
-    }
-    fetchUser()
+    refresh()
   }, [])
 
   const handleLogout = () => {
     clearTokens()
-    setUser(null)
+    clear()
     router.push("/auth/login")
-    // Force reload to update UI state if needed
-    router.refresh()
   }
 
   if (loading) return null
@@ -43,7 +42,7 @@ export function NavActions() {
           管理后台
         </Link>
       )}
-      
+
       {user && user.is_guest && (
         <Link href="/auth/register" className={navigationMenuTriggerStyle()}>
           升级账号
@@ -51,9 +50,29 @@ export function NavActions() {
       )}
 
       {user ? (
-        <Button variant="ghost" size="sm" onClick={handleLogout}>
-          退出
-        </Button>
+        user.is_guest ? (
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="ghost" size="sm">退出</Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>确认退出访客账户？</AlertDialogTitle>
+                <AlertDialogDescription>
+                  访客账户没有密码。退出后，如需继续投票，需要重新通过学校身份验证。
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>取消</AlertDialogCancel>
+                <AlertDialogAction onClick={handleLogout}>确认退出</AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        ) : (
+          <Button variant="ghost" size="sm" onClick={handleLogout}>
+            退出
+          </Button>
+        )
       ) : (
         <Link href="/auth/login" className={navigationMenuTriggerStyle()}>
           登录

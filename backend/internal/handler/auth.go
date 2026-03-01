@@ -111,6 +111,66 @@ func (h *AuthHandler) SendCode(c echo.Context) error {
 	return c.JSON(http.StatusOK, map[string]string{"message": "code sent"})
 }
 
+type registerDirectRequest struct {
+	Nickname   string `json:"nickname"`
+	SchoolCode string `json:"school_code"`
+	Method     string `json:"method"` // "question" | "email"
+	Answer     string `json:"answer"`
+	Email      string `json:"email"`
+	Code       string `json:"code"`
+	Password   string `json:"password"`
+}
+
+func (h *AuthHandler) RegisterDirect(c echo.Context) error {
+	var req registerDirectRequest
+	if err := c.Bind(&req); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+	if req.Password == "" {
+		return echo.NewHTTPError(http.StatusBadRequest, "password is required")
+	}
+
+	ip := c.RealIP()
+	ua := c.Request().UserAgent()
+	ctx := c.Request().Context()
+
+	var access, refresh string
+	var err error
+
+	switch req.Method {
+	case "question":
+		access, refresh, err = h.auth.RegisterByQuestion(ctx, req.Nickname, req.SchoolCode, req.Answer, req.Password, ip, ua)
+	case "email":
+		access, refresh, err = h.auth.RegisterByEmail(ctx, req.Nickname, req.Email, req.Code, req.Password, ip, ua)
+	default:
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid method")
+	}
+
+	if err != nil {
+		switch err {
+		case service.ErrNicknameConflictSameSchool:
+			return c.JSON(http.StatusConflict, map[string]string{"conflict": "same_school"})
+		case service.ErrNicknameConflictDifferentSchool:
+			return c.JSON(http.StatusConflict, map[string]string{"conflict": "different_school"})
+		case service.ErrWrongAnswer:
+			return echo.NewHTTPError(http.StatusUnauthorized, "wrong answer")
+		case service.ErrInvalidCode:
+			return echo.NewHTTPError(http.StatusUnauthorized, "invalid or expired code")
+		case service.ErrEmailSuffixNotAllowed:
+			return echo.NewHTTPError(http.StatusBadRequest, "email suffix not allowed for this school")
+		case service.ErrSchoolNotFound:
+			return echo.NewHTTPError(http.StatusNotFound, "school not found")
+		default:
+			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		}
+	}
+
+	return c.JSON(http.StatusOK, map[string]string{
+		"access_token":  access,
+		"refresh_token": refresh,
+	})
+}
+
 type loginRequest struct {
 	Email    string `json:"email"`
 	Password string `json:"password"`

@@ -5,9 +5,11 @@ import { api, APIError, saveTokens } from "@/lib/api"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { useVoteStore } from "@/hooks/useVoteStore"
+import { useAuthStore } from "@/hooks/useAuthStore"
 
 export function NicknameConflict() {
   const { school, schoolDetail, pendingNickname, goTo } = useVoteStore()
+  const refreshAuth = useAuthStore((s) => s.refresh)
   const [method, setMethod] = useState<"question" | "email">("question")
   const [answer, setAnswer] = useState("")
   const [email, setEmail] = useState("")
@@ -50,6 +52,7 @@ export function NicknameConflict() {
         return
       }
       saveTokens(res.access_token, res.refresh_token)
+      await refreshAuth()
       goTo("vote")
     } catch (err) {
       setError(err instanceof APIError ? err.message : "验证失败，请重试")
@@ -137,7 +140,7 @@ export function NicknameConflict() {
           </div>
         </div>
 
-        <Button variant="outline" className="w-full" onClick={() => goTo("verify")}>
+        <Button variant="outline" className="w-full" onClick={() => goTo("nickname")}>
           ← 返回，换一个昵称
         </Button>
       </CardContent>

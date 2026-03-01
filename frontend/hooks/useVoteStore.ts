@@ -3,7 +3,7 @@
 import { create } from "zustand"
 import { School, SchoolDetail, VotingSession } from "@/lib/api"
 
-export type VoteStep = "select-school" | "verify" | "vote" | "conflict"
+export type VoteStep = "select-school" | "nickname" | "verify" | "vote" | "conflict"
 
 interface VoteStore {
   step: VoteStep
@@ -15,6 +15,7 @@ interface VoteStore {
   setSchool: (school: School, detail: SchoolDetail) => void
   setSession: (session: VotingSession) => void
   goTo: (step: VoteStep) => void
+  setNickname: (nickname: string) => void
   setConflict: (type: "same_school" | "different_school", nickname: string) => void
   reset: () => void
 }
@@ -29,6 +30,7 @@ export const useVoteStore = create<VoteStore>((set) => ({
   setSchool: (school, schoolDetail) => set({ school, schoolDetail }),
   setSession: (session) => set({ session }),
   goTo: (step) => set({ step }),
+  setNickname: (pendingNickname) => set({ pendingNickname }),
   setConflict: (conflictType, pendingNickname) =>
     set({ conflictType, pendingNickname, step: "conflict" }),
   reset: () =>

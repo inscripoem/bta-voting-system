@@ -81,25 +81,29 @@ func (s *AuthService) GuestByQuestion(ctx context.Context, nickname, schoolCode,
 	return s.findOrCreateGuest(ctx, nickname, school, nil, ip, ua)
 }
 
-// SendEmailCode sends a 6-digit verification code to the given email if it matches school suffixes.
+// SendEmailCode sends a 6-digit verification code to the given email.
+// If schoolCode is non-empty, validates email suffix against school config.
+// If schoolCode is empty, accepts any email (used for account upgrade).
 func (s *AuthService) SendEmailCode(ctx context.Context, emailAddr, schoolCode string) error {
-	school, err := s.db.School.Query().Where(entschool.Code(schoolCode)).Only(ctx)
-	if err != nil {
-		return ErrSchoolNotFound
+	var entry codeEntry
+	entry.code = generateCode()
+	entry.expiresAt = time.Now().Add(5 * time.Minute)
+
+	if schoolCode != "" {
+		school, err := s.db.School.Query().Where(entschool.Code(schoolCode)).Only(ctx)
+		if err != nil {
+			return ErrSchoolNotFound
+		}
+		if !emailMatchesSuffixes(emailAddr, school.EmailSuffixes) {
+			return ErrEmailSuffixNotAllowed
+		}
+		entry.schoolID = school.ID
 	}
-	suffixes := school.EmailSuffixes
-	if !emailMatchesSuffixes(emailAddr, suffixes) {
-		return ErrEmailSuffixNotAllowed
-	}
-	code := generateCode()
+
 	s.mu.Lock()
-	s.codes[emailAddr] = codeEntry{
-		code:      code,
-		expiresAt: time.Now().Add(5 * time.Minute),
-		schoolID:  school.ID,
-	}
+	s.codes[emailAddr] = entry
 	s.mu.Unlock()
-	return s.email.SendVerificationCode(emailAddr, code)
+	return s.email.SendVerificationCode(emailAddr, entry.code)
 }
 
 // GuestByEmail creates or logs in a guest user via email verification code.
@@ -156,6 +160,72 @@ func (s *AuthService) ReauthByEmail(ctx context.Context, nickname, emailAddr, co
 	user, err := s.db.User.Query().Where(entuser.Nickname(nickname)).Only(ctx)
 	if err != nil {
 		return "", "", errors.New("user not found")
+	}
+	return s.issueTokens(ctx, user)
+}
+
+// RegisterByQuestion creates a registered (non-guest) user via verification question.
+func (s *AuthService) RegisterByQuestion(ctx context.Context, nickname, schoolCode, answer, password, ip, ua string) (access, refresh string, err error) {
+	school, err := s.db.School.Query().Where(entschool.Code(schoolCode)).Only(ctx)
+	if err != nil {
+		return "", "", ErrSchoolNotFound
+	}
+	questions := school.VerificationQuestions
+	if len(questions) > 0 {
+		expected := questions[0]["answer"]
+		if !strings.EqualFold(strings.TrimSpace(answer), strings.TrimSpace(expected)) {
+			return "", "", ErrWrongAnswer
+		}
+	}
+	return s.createRegistered(ctx, nickname, school, nil, password)
+}
+
+// RegisterByEmail creates a registered (non-guest) user via school email verification code.
+func (s *AuthService) RegisterByEmail(ctx context.Context, nickname, emailAddr, code, password, ip, ua string) (access, refresh string, err error) {
+	s.mu.RLock()
+	entry, ok := s.codes[emailAddr]
+	s.mu.RUnlock()
+	if !ok || entry.code != code || time.Now().After(entry.expiresAt) {
+		return "", "", ErrInvalidCode
+	}
+	s.mu.Lock()
+	delete(s.codes, emailAddr)
+	s.mu.Unlock()
+
+	school, err := s.db.School.Get(ctx, entry.schoolID)
+	if err != nil {
+		return "", "", ErrSchoolNotFound
+	}
+	return s.createRegistered(ctx, nickname, school, &emailAddr, password)
+}
+
+// createRegistered creates a non-guest user with a password.
+func (s *AuthService) createRegistered(ctx context.Context, nickname string, school *ent.School, email *string, password string) (access, refresh string, err error) {
+	existing, err := s.db.User.Query().Where(entuser.Nickname(nickname)).Only(ctx)
+	if err != nil && !ent.IsNotFound(err) {
+		return "", "", err
+	}
+	if existing != nil {
+		existingSchool, _ := existing.QuerySchool().Only(ctx)
+		if existingSchool != nil && existingSchool.ID == school.ID {
+			return "", "", ErrNicknameConflictSameSchool
+		}
+		return "", "", ErrNicknameConflictDifferentSchool
+	}
+	hashed, err := HashPassword(password)
+	if err != nil {
+		return "", "", err
+	}
+	user, err := s.db.User.Create().
+		SetNickname(nickname).
+		SetNillableEmail(email).
+		SetIsGuest(false).
+		SetRole(entuser.RoleVoter).
+		SetSchool(school).
+		SetPasswordHash(hashed).
+		Save(ctx)
+	if err != nil {
+		return "", "", err
 	}
 	return s.issueTokens(ctx, user)
 }

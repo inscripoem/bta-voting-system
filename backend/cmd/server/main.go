@@ -93,6 +93,7 @@ func main() {
 
 	// Auth
 	v1.POST("/auth/guest", authH.Guest)
+	v1.POST("/auth/register", authH.RegisterDirect)
 	v1.POST("/auth/send-code", authH.SendCode)
 	v1.POST("/auth/login", authH.Login)
 	v1.POST("/auth/upgrade", authH.Upgrade, jwtMW)

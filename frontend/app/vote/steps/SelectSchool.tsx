@@ -27,7 +27,7 @@ export function SelectSchool() {
       ])
       setSchool(selected, detail)
       setSession(session)
-      goTo("verify")
+      goTo("nickname")
     } catch (err) {
       console.error(err)
     } finally {

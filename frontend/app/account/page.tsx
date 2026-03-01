@@ -10,11 +10,6 @@ export default function AccountPage() {
   const [loadingUser, setLoadingUser] = useState(true)
   const [userError, setUserError] = useState<string | null>(null)
 
-  const [step, setStep] = useState<"form" | "verify">("form")
-  const [email, setEmail] = useState("")
-  const [submitting, setSubmitting] = useState(false)
-  const [submitError, setSubmitError] = useState<string | null>(null)
-
   useEffect(() => {
     api.me
       .get()
@@ -28,24 +23,6 @@ export default function AccountPage() {
       })
       .finally(() => setLoadingUser(false))
   }, [])
-
-  async function handleSendEmail(e: React.FormEvent) {
-    e.preventDefault()
-    setSubmitError(null)
-    setSubmitting(true)
-    try {
-      await api.auth.upgrade(email)
-      setStep("verify")
-    } catch (err: unknown) {
-      if (err instanceof APIError) {
-        setSubmitError(err.message)
-      } else {
-        setSubmitError("发送失败，请稍后再试")
-      }
-    } finally {
-      setSubmitting(false)
-    }
-  }
 
   return (
     <div className="container py-12 max-w-lg mx-auto px-4 space-y-6">
@@ -93,61 +70,13 @@ export default function AccountPage() {
 
       {user?.is_guest && (
         <Card>
-          <CardHeader>
-            <CardTitle>升级为注册账户</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {step === "form" && (
-              <form onSubmit={handleSendEmail} className="space-y-4">
-                <p className="text-sm text-muted-foreground">
-                  输入您的邮箱地址，我们将发送一封验证邮件。点击邮件中的链接即可完成账户升级并设置密码。
-                </p>
-                <div className="space-y-2">
-                  <label
-                    htmlFor="email"
-                    className="text-sm font-medium leading-none"
-                  >
-                    邮箱地址
-                  </label>
-                  <input
-                    id="email"
-                    type="email"
-                    required
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="your@email.com"
-                    className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                  />
-                </div>
-                {submitError && (
-                  <p className="text-destructive text-sm">{submitError}</p>
-                )}
-                <Button type="submit" disabled={submitting}>
-                  {submitting ? "发送中…" : "发送验证邮件"}
-                </Button>
-              </form>
-            )}
-
-            {step === "verify" && (
-              <div className="space-y-3">
-                <p className="text-sm">
-                  验证邮件已发送至 <strong>{email}</strong>
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  请检查您的收件箱，点击邮件中的链接完成账户升级。如未收到，请检查垃圾邮件文件夹。
-                </p>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    setStep("form")
-                    setEmail("")
-                  }}
-                >
-                  重新发送
-                </Button>
-              </div>
-            )}
+          <CardContent className="pt-6">
+            <p className="text-sm text-muted-foreground mb-4">
+              升级为正式用户可保留历年投票记录，并通过邮箱密码登录。
+            </p>
+            <Button asChild className="w-full">
+              <a href="/auth/register">升级账户</a>
+            </Button>
           </CardContent>
         </Card>
       )}

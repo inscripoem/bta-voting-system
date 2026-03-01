@@ -2,112 +2,60 @@
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { api, clearTokens } from "@/lib/api"
+import Link from "next/link"
+import { api, APIError, saveTokens, School, SchoolDetail } from "@/lib/api"
+import { useAuthStore } from "@/hooks/useAuthStore"
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import Link from "next/link"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 
-export default function RegisterPage() {
+// ─── Upgrade flow (for existing guest users) ────────────────────────────────
+
+function UpgradeFlow() {
   const router = useRouter()
-  const [user, setUser] = useState<any>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  
+  const { refresh } = useAuthStore()
   const [step, setStep] = useState<"email" | "code" | "password" | "done">("email")
   const [email, setEmail] = useState("")
   const [code, setCode] = useState("")
   const [password, setPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
-  const [isSubmitting, setIsSubmitting] = useState(false)
-
-  useEffect(() => {
-    async function checkAuth() {
-      try {
-        const data = await api.me.get()
-        setUser(data)
-      } catch (err) {
-        setUser(null)
-      } finally {
-        setLoading(false)
-      }
-    }
-    checkAuth()
-  }, [])
-
-  if (loading) {
-    return <div className="flex min-h-[calc(100vh-3.5rem)] items-center justify-center p-4">加载中...</div>
-  }
-
-  if (!user) {
-    return (
-      <div className="flex min-h-[calc(100vh-3.5rem)] items-center justify-center p-4">
-        <Card className="w-full max-w-md">
-          <CardHeader>
-            <CardTitle>升级账户</CardTitle>
-            <CardDescription>请先完成投票身份验证</CardDescription>
-          </CardHeader>
-          <CardContent className="flex flex-col items-center gap-4">
-             <p className="text-sm text-center text-muted-foreground">
-               您目前还不是正式用户或访客用户。升级账号前，请先通过所在学校的身份验证。
-             </p>
-             <Button asChild className="w-full">
-               <Link href="/vote">前往投票/身份验证</Link>
-             </Button>
-          </CardContent>
-        </Card>
-      </div>
-    )
-  }
-
-  if (!user.is_guest) {
-    return (
-      <div className="flex min-h-[calc(100vh-3.5rem)] items-center justify-center p-4">
-        <Card className="w-full max-w-md text-center">
-          <CardHeader>
-            <CardTitle>已是正式用户</CardTitle>
-            <CardDescription>您已经是正式注册用户，无需升级。</CardDescription>
-          </CardHeader>
-          <CardFooter>
-            <Button className="w-full" asChild>
-               <Link href="/">返回首页</Link>
-            </Button>
-          </CardFooter>
-        </Card>
-      </div>
-    )
-  }
+  const [error, setError] = useState<string | null>(null)
+  const [submitting, setSubmitting] = useState(false)
 
   const handleSendCode = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
-    setIsSubmitting(true)
+    setSubmitting(true)
     try {
-      // POST /api/v1/auth/send-code
-      // We need user.school_code
-      await api.auth.sendCode(email, user.school_code)
+      await api.auth.sendCode(email) // no school_code → any email
       setStep("code")
     } catch (err: any) {
-      setError(err.message ?? "发送验证码失败")
+      setError(err instanceof APIError ? err.message : "发送失败，请稍后再试")
     } finally {
-      setIsSubmitting(false)
+      setSubmitting(false)
     }
   }
 
   const handleVerifyCode = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
-    setIsSubmitting(true)
+    setSubmitting(true)
     try {
-      // POST /api/v1/auth/verify-email
       await api.auth.verifyEmail(email, code)
       setStep("password")
     } catch (err: any) {
-      setError(err.message ?? "验证码错误")
+      setError(err instanceof APIError ? err.message : "验证码错误")
     } finally {
-      setIsSubmitting(false)
+      setSubmitting(false)
     }
   }
 
@@ -118,116 +66,436 @@ export default function RegisterPage() {
       return
     }
     setError(null)
-    setIsSubmitting(true)
+    setSubmitting(true)
     try {
-      // POST /api/v1/auth/upgrade
       await api.auth.upgrade(password)
+      await refresh()
       setStep("done")
     } catch (err: any) {
-      setError(err.message ?? "设置密码失败")
+      setError(err instanceof APIError ? err.message : "设置密码失败")
     } finally {
-      setIsSubmitting(false)
+      setSubmitting(false)
     }
   }
 
   return (
-    <div className="flex min-h-[calc(100vh-3.5rem)] items-center justify-center p-4">
+    <Card className="w-full max-w-md">
+      <CardHeader>
+        <CardTitle>升级为正式用户</CardTitle>
+        <CardDescription>验证邮箱后设置密码，保留历年投票记录。邮箱无后缀限制。</CardDescription>
+      </CardHeader>
+      <CardContent>
+        {error && (
+          <Alert variant="destructive" className="mb-4">
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
+
+        {step === "email" && (
+          <form onSubmit={handleSendCode} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="email">邮箱</Label>
+              <Input
+                id="email"
+                type="email"
+                placeholder="your@email.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+              />
+            </div>
+            <Button type="submit" className="w-full" disabled={submitting}>
+              {submitting ? "发送中..." : "发送验证码"}
+            </Button>
+          </form>
+        )}
+
+        {step === "code" && (
+          <form onSubmit={handleVerifyCode} className="space-y-4">
+            <p className="text-sm text-muted-foreground">验证码已发送至 <strong>{email}</strong></p>
+            <div className="space-y-2">
+              <Label htmlFor="code">验证码</Label>
+              <Input
+                id="code"
+                type="text"
+                placeholder="6位验证码"
+                value={code}
+                onChange={(e) => setCode(e.target.value)}
+                required
+              />
+            </div>
+            <Button type="submit" className="w-full" disabled={submitting}>
+              {submitting ? "验证中..." : "下一步"}
+            </Button>
+            <Button variant="link" className="w-full text-xs" onClick={() => setStep("email")}>
+              修改邮箱
+            </Button>
+          </form>
+        )}
+
+        {step === "password" && (
+          <form onSubmit={handleSetPassword} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="password">设置登录密码</Label>
+              <Input
+                id="password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="confirm-password">确认密码</Label>
+              <Input
+                id="confirm-password"
+                type="password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                required
+              />
+            </div>
+            <Button type="submit" className="w-full" disabled={submitting}>
+              {submitting ? "提交中..." : "完成升级"}
+            </Button>
+          </form>
+        )}
+
+        {step === "done" && (
+          <div className="space-y-4 text-center">
+            <p className="text-sm">账号已成功升级为正式用户！</p>
+            <Button className="w-full" onClick={() => router.push("/")}>回到首页</Button>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  )
+}
+
+// ─── Direct registration flow (for unauthenticated users) ────────────────────
+
+function DirectRegisterFlow() {
+  const router = useRouter()
+  const { refresh } = useAuthStore()
+  const [schools, setSchools] = useState<School[]>([])
+  const [step, setStep] = useState<"school" | "form" | "done">("school")
+  const [school, setSchool] = useState<School | null>(null)
+  const [schoolDetail, setSchoolDetail] = useState<SchoolDetail | null>(null)
+  const [method, setMethod] = useState<"question" | "email">("question")
+  const [nickname, setNickname] = useState("")
+  const [answer, setAnswer] = useState("")
+  const [emailLocal, setEmailLocal] = useState("")
+  const [emailSuffix, setEmailSuffix] = useState("")
+  const [code, setCode] = useState("")
+  const [codeSent, setCodeSent] = useState(false)
+  const [password, setPassword] = useState("")
+  const [confirmPassword, setConfirmPassword] = useState("")
+  const [error, setError] = useState<string | null>(null)
+  const [submitting, setSubmitting] = useState(false)
+  const [loadingDetail, setLoadingDetail] = useState(false)
+
+  useEffect(() => {
+    api.schools.list().then(setSchools).catch(console.error)
+  }, [])
+
+  const handleSelectSchool = async (s: School) => {
+    setSchool(s)
+    setLoadingDetail(true)
+    try {
+      const detail = await api.schools.get(s.code)
+      setSchoolDetail(detail)
+      setEmailSuffix(detail.email_suffixes?.[0] ?? "")
+    } catch {
+      setError("加载学校信息失败")
+    } finally {
+      setLoadingDetail(false)
+    }
+  }
+
+  const suffixes = schoolDetail?.email_suffixes ?? []
+  const fullEmail = emailLocal + (emailSuffix || suffixes[0] || "")
+  const question = schoolDetail?.verification_questions?.[0]?.question
+
+  const handleSendCode = async () => {
+    if (!school) return
+    setSubmitting(true)
+    setError(null)
+    try {
+      await api.auth.sendCode(fullEmail, school.code)
+      setCodeSent(true)
+    } catch (err: any) {
+      setError(err instanceof APIError ? err.message : "发送失败")
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  const handleRegister = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!school) return
+    if (password !== confirmPassword) {
+      setError("两次输入的密码不一致")
+      return
+    }
+    setError(null)
+    setSubmitting(true)
+    try {
+      const res = await api.auth.register({
+        nickname: nickname.trim(),
+        school_code: school.code,
+        method,
+        answer: method === "question" ? answer : undefined,
+        email: method === "email" ? fullEmail : undefined,
+        code: method === "email" ? code : undefined,
+        password,
+      })
+      if ("conflict" in res) {
+        setError(
+          res.conflict === "different_school"
+            ? "该昵称已被其他学校使用，请换一个昵称。"
+            : "该昵称已被使用，请换一个昵称，或前往投票页面验证原账户。"
+        )
+        return
+      }
+      saveTokens(res.access_token, res.refresh_token)
+      await refresh()
+      setStep("done")
+    } catch (err: any) {
+      setError(err instanceof APIError ? err.message : "注册失败，请重试")
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  if (step === "done") {
+    return (
+      <Card className="w-full max-w-md text-center">
+        <CardHeader>
+          <CardTitle>注册成功</CardTitle>
+          <CardDescription>你的正式账户已创建，可以开始投票了。</CardDescription>
+        </CardHeader>
+        <CardFooter>
+          <Button className="w-full" onClick={() => router.push("/vote")}>前往投票</Button>
+        </CardFooter>
+      </Card>
+    )
+  }
+
+  if (step === "school") {
+    return (
       <Card className="w-full max-w-md">
         <CardHeader>
-          <CardTitle>升级为正式用户</CardTitle>
-          <CardDescription>
-            正式用户可以长期保存投票记录并参与未来的活动。升级过程需要验证您的学校邮箱。
-          </CardDescription>
+          <CardTitle>注册正式账户</CardTitle>
+          <CardDescription>选择你的学校，通过身份验证后设置密码。</CardDescription>
         </CardHeader>
-        <CardContent>
-          {error && (
-            <Alert variant="destructive" className="mb-4">
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
-          )}
-
-          {step === "email" && (
-            <form onSubmit={handleSendCode} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="email">学校邮箱</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="your@email.edu.cn"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                />
-                <p className="text-xs text-muted-foreground">
-                  请使用您所在学校的官方邮箱。
-                </p>
-              </div>
-              <Button type="submit" className="w-full" disabled={isSubmitting}>
-                {isSubmitting ? "发送中..." : "发送验证码"}
-              </Button>
-            </form>
-          )}
-
-          {step === "code" && (
-            <form onSubmit={handleVerifyCode} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="code">验证码</Label>
-                <Input
-                  id="code"
-                  type="text"
-                  placeholder="请输入6位验证码"
-                  value={code}
-                  onChange={(e) => setCode(e.target.value)}
-                  required
-                />
-              </div>
-              <Button type="submit" className="w-full" disabled={isSubmitting}>
-                {isSubmitting ? "验证中..." : "下一步"}
-              </Button>
-              <Button variant="link" className="w-full text-xs" onClick={() => setStep("email")}>
-                修改邮箱地址
-              </Button>
-            </form>
-          )}
-
-          {step === "password" && (
-            <form onSubmit={handleSetPassword} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="password">设置登录密码</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="confirm-password">确认密码</Label>
-                <Input
-                  id="confirm-password"
-                  type="password"
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  required
-                />
-              </div>
-              <Button type="submit" className="w-full" disabled={isSubmitting}>
-                {isSubmitting ? "提交中..." : "完成升级"}
-              </Button>
-            </form>
-          )}
-
-          {step === "done" && (
-            <div className="space-y-4 text-center">
-              <p className="text-sm">恭喜您，账号已成功升级为正式用户！</p>
-              <Button className="w-full" onClick={() => router.push('/')}>
-                回到首页
-              </Button>
-            </div>
-          )}
+        <CardContent className="space-y-3">
+          {schools.map((s) => (
+            <button
+              key={s.id}
+              onClick={() => handleSelectSchool(s)}
+              className={`w-full text-left px-4 py-3 rounded-lg border transition-colors ${
+                school?.id === s.id
+                  ? "border-primary bg-primary/10 text-primary"
+                  : "border-border hover:border-primary/50"
+              }`}
+            >
+              {s.name}
+            </button>
+          ))}
+          <Button
+            className="w-full mt-2"
+            disabled={!school || loadingDetail}
+            onClick={() => setStep("form")}
+          >
+            {loadingDetail ? "加载中…" : "下一步"}
+          </Button>
         </CardContent>
       </Card>
+    )
+  }
+
+  return (
+    <Card className="w-full max-w-md">
+      <CardHeader>
+        <CardTitle>验证身份并设置密码</CardTitle>
+        <CardDescription>{school?.name}</CardDescription>
+      </CardHeader>
+      <CardContent>
+        {error && (
+          <Alert variant="destructive" className="mb-4">
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
+        <form onSubmit={handleRegister} className="space-y-4">
+          {/* Nickname */}
+          <div className="space-y-2">
+            <Label htmlFor="nickname">昵称</Label>
+            <Input
+              id="nickname"
+              placeholder="设置你的唯一昵称"
+              value={nickname}
+              onChange={(e) => setNickname(e.target.value)}
+              required
+            />
+          </div>
+
+          {/* Method toggle */}
+          <div className="flex gap-2">
+            <Button
+              type="button"
+              variant={method === "question" ? "default" : "outline"}
+              size="sm"
+              onClick={() => setMethod("question")}
+            >
+              验证题
+            </Button>
+            <Button
+              type="button"
+              variant={method === "email" ? "default" : "outline"}
+              size="sm"
+              onClick={() => setMethod("email")}
+            >
+              教育邮箱
+            </Button>
+          </div>
+
+          {/* Question */}
+          {method === "question" && question && (
+            <div className="space-y-2">
+              <Label>{question}</Label>
+              <Input
+                placeholder="输入答案"
+                value={answer}
+                onChange={(e) => setAnswer(e.target.value)}
+              />
+            </div>
+          )}
+
+          {/* Email */}
+          {method === "email" && (
+            <div className="space-y-2">
+              <Label>教育邮箱</Label>
+              <div className="flex gap-2">
+                <div className="flex flex-1 items-center rounded-md border border-input overflow-hidden">
+                  <input
+                    className="flex-1 bg-background px-3 py-2 text-sm outline-none"
+                    placeholder="用户名"
+                    value={emailLocal}
+                    onChange={(e) => setEmailLocal(e.target.value)}
+                  />
+                  {suffixes.length > 1 ? (
+                    <Select value={emailSuffix || suffixes[0]} onValueChange={setEmailSuffix}>
+                      <SelectTrigger className="w-auto border-0 border-l rounded-none shrink-0 text-muted-foreground text-sm focus:ring-0">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {suffixes.map((s) => (
+                          <SelectItem key={s} value={s}>{s}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  ) : (
+                    <span className="px-3 py-2 text-sm text-muted-foreground border-l bg-muted/30 shrink-0">
+                      {suffixes[0] ?? "@edu.cn"}
+                    </span>
+                  )}
+                </div>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={handleSendCode}
+                  disabled={!emailLocal || submitting}
+                >
+                  {codeSent ? "重发" : "发送"}
+                </Button>
+              </div>
+              {codeSent && (
+                <div className="space-y-2">
+                  <Label htmlFor="code">验证码</Label>
+                  <Input
+                    id="code"
+                    placeholder="6位验证码"
+                    value={code}
+                    onChange={(e) => setCode(e.target.value)}
+                  />
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Password */}
+          <div className="space-y-2">
+            <Label htmlFor="reg-password">登录密码</Label>
+            <Input
+              id="reg-password"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="reg-confirm">确认密码</Label>
+            <Input
+              id="reg-confirm"
+              type="password"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              required
+            />
+          </div>
+
+          <Button type="submit" className="w-full" disabled={submitting}>
+            {submitting ? "注册中..." : "完成注册"}
+          </Button>
+          <Button type="button" variant="ghost" className="w-full" onClick={() => setStep("school")}>
+            ← 换一所学校
+          </Button>
+        </form>
+      </CardContent>
+    </Card>
+  )
+}
+
+// ─── Page entry point ────────────────────────────────────────────────────────
+
+export default function RegisterPage() {
+  const { user, loading, refresh } = useAuthStore()
+
+  useEffect(() => {
+    refresh()
+  }, [])
+
+  if (loading) {
+    return (
+      <div className="flex min-h-[calc(100vh-3.5rem)] items-center justify-center p-4">
+        加载中...
+      </div>
+    )
+  }
+
+  if (user && !user.is_guest) {
+    return (
+      <div className="flex min-h-[calc(100vh-3.5rem)] items-center justify-center p-4">
+        <Card className="w-full max-w-md text-center">
+          <CardHeader>
+            <CardTitle>已是正式用户</CardTitle>
+            <CardDescription>您已经是正式注册用户，无需再次注册。</CardDescription>
+          </CardHeader>
+          <CardFooter>
+            <Button className="w-full" asChild>
+              <Link href="/">返回首页</Link>
+            </Button>
+          </CardFooter>
+        </Card>
+      </div>
+    )
+  }
+
+  return (
+    <div className="flex min-h-[calc(100vh-3.5rem)] items-center justify-center p-4">
+      {user?.is_guest ? <UpgradeFlow /> : <DirectRegisterFlow />}
     </div>
   )
 }
