@@ -130,11 +130,9 @@ export function SiteHeader() {
                 {menuItems.map((item) => (
                   <NavigationMenuItem key={item.title}>
                     {item.href ? (
-                      <Link href={item.href} legacyBehavior passHref>
-                        <NavigationMenuLink className={navigationMenuTriggerStyle()}>
-                          {item.title}
-                        </NavigationMenuLink>
-                      </Link>
+                      <NavigationMenuLink asChild className={navigationMenuTriggerStyle()}>
+                        <Link href={item.href}>{item.title}</Link>
+                      </NavigationMenuLink>
                     ) : (
                       <>
                         <NavigationMenuTrigger>{item.title}</NavigationMenuTrigger>

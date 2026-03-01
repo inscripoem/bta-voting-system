@@ -12,9 +12,12 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     },
   })
   if (res.status === 401 && typeof window !== "undefined") {
+    const hadToken = !!localStorage.getItem("access_token")
     clearTokens()
-    const next = encodeURIComponent(window.location.pathname + window.location.search)
-    window.location.href = `/auth/login?next=${next}`
+    if (hadToken && !window.location.pathname.startsWith("/auth/")) {
+      const next = encodeURIComponent(window.location.pathname + window.location.search)
+      window.location.href = `/auth/login?next=${next}`
+    }
     throw new APIError(401, "Unauthorized")
   }
   if (!res.ok) {
@@ -44,9 +47,12 @@ export async function requestBlob(path: string, init?: RequestInit): Promise<Blo
     },
   })
   if (res.status === 401 && typeof window !== "undefined") {
+    const hadToken = !!token
     clearTokens()
-    const next = encodeURIComponent(window.location.pathname + window.location.search)
-    window.location.href = `/auth/login?next=${next}`
+    if (hadToken && !window.location.pathname.startsWith("/auth/")) {
+      const next = encodeURIComponent(window.location.pathname + window.location.search)
+      window.location.href = `/auth/login?next=${next}`
+    }
     throw new APIError(401, "Unauthorized")
   }
   if (!res.ok) {
@@ -64,7 +70,7 @@ export interface School {
 
 export interface SchoolDetail extends School {
   email_suffixes: string[]
-  verification_questions: Array<{ question: string }>
+  verification_questions: Array<{ question: string; answer?: string }>
 }
 
 export interface VotingSession {
@@ -145,7 +151,7 @@ export interface SchoolListItem {
   name: string
   code: string
   email_suffixes: string[]
-  verification_questions: Array<{ question: string; type: string }>
+  verification_questions: Array<{ question: string; answer?: string }>
   is_active: boolean
   created_at: string
 }
@@ -203,7 +209,7 @@ export const api = {
         method: "POST",
         body: JSON.stringify({ email, school_code: schoolCode }),
       }),
-    guest: (body: {
+    guest: async (body: {
       nickname: string
       school_code: string
       method: "question" | "email"
@@ -211,14 +217,30 @@ export const api = {
       email?: string
       code?: string
       reauth?: boolean
-    }) => request<TokenResponse | ConflictResponse>("/auth/guest", {
-      method: "POST",
-      body: JSON.stringify(body),
-    }),
-    login: (nickname: string, password: string) =>
+    }): Promise<TokenResponse | ConflictResponse> => {
+      const token =
+        typeof window !== "undefined" ? localStorage.getItem("access_token") : null
+      const res = await fetch(`${BASE}/auth/guest`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify(body),
+      })
+      if (res.status === 409) {
+        return res.json() as Promise<ConflictResponse>
+      }
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ message: res.statusText }))
+        throw new APIError(res.status, (err as { message?: string }).message ?? res.statusText)
+      }
+      return res.json() as Promise<TokenResponse>
+    },
+    login: (email: string, password: string) =>
       request<TokenResponse>("/auth/login", {
         method: "POST",
-        body: JSON.stringify({ nickname, password }),
+        body: JSON.stringify({ email, password }),
       }),
     upgrade: (password: string) =>
       request<{ message: string }>("/auth/upgrade", {
@@ -288,7 +310,7 @@ export const api = {
       name: string
       code: string
       email_suffixes?: string[]
-      verification_questions?: Array<{ question: string; type: string }>
+      verification_questions?: Array<{ question: string; answer?: string }>
       is_active?: boolean
     }) =>
       request<{ id: string }>("/admin/schools", {
@@ -301,7 +323,7 @@ export const api = {
         name?: string
         code?: string
         email_suffixes?: string[]
-        verification_questions?: Array<{ question: string; type: string }>
+        verification_questions?: Array<{ question: string; answer?: string }>
         is_active?: boolean
       }
     ) =>

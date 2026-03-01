@@ -112,7 +112,7 @@ func (h *AuthHandler) SendCode(c echo.Context) error {
 }
 
 type loginRequest struct {
-	Nickname string `json:"nickname"`
+	Email    string `json:"email"`
 	Password string `json:"password"`
 }
 
@@ -121,7 +121,7 @@ func (h *AuthHandler) Login(c echo.Context) error {
 	if err := c.Bind(&req); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
-	access, refresh, err := h.auth.Login(c.Request().Context(), req.Nickname, req.Password)
+	access, refresh, err := h.auth.Login(c.Request().Context(), req.Email, req.Password)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusUnauthorized, "invalid credentials")
 	}

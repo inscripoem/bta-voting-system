@@ -15,6 +15,7 @@ export default function SessionVotePage() {
   const yearParam = params.year as string
   const store = useVoteStore()
   const [loading, setLoading] = useState(true)
+  const [adminNoSchool, setAdminNoSchool] = useState(false)
 
   useEffect(() => {
     async function loadSession() {
@@ -42,6 +43,25 @@ export default function SessionVotePage() {
         }
       } catch (e) {
         console.error("Failed to fetch session", e)
+        setLoading(false)
+        return
+      }
+
+      // If already logged in as a registered user, skip verification flow
+      try {
+        const me = await api.me.get()
+        if (!me.is_guest) {
+          if (me.school_code) {
+            const schoolDetail = await api.schools.get(me.school_code)
+            store.setSchool(schoolDetail, schoolDetail)
+            store.goTo("vote")
+          } else {
+            // Registered user (e.g. super_admin) with no school association
+            setAdminNoSchool(true)
+          }
+        }
+      } catch {
+        // Not logged in or guest — proceed with normal verification flow
       } finally {
         setLoading(false)
       }
@@ -53,6 +73,15 @@ export default function SessionVotePage() {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+      </div>
+    )
+  }
+
+  if (adminNoSchool) {
+    return (
+      <div className="container py-20 text-center">
+        <h2 className="text-2xl font-bold mb-4">管理员账户无法直接参与投票</h2>
+        <p className="text-muted-foreground">请使用关联了学校的用户账户参与投票。</p>
       </div>
     )
   }

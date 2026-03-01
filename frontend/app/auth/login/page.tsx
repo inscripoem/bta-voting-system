@@ -14,7 +14,7 @@ function LoginForm() {
   const searchParams = useSearchParams()
   const next = searchParams.get("next") ?? "/"
   
-  const [nickname, setNickname] = useState("")
+  const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
@@ -25,9 +25,9 @@ function LoginForm() {
     setLoading(true)
 
     try {
-      const res = await api.auth.login(nickname, password)
+      const res = await api.auth.login(email, password)
       saveTokens(res.access_token, res.refresh_token)
-      router.push(next)
+      window.location.href = next
     } catch (err: any) {
       setError(err.message ?? "登录失败")
     } finally {
@@ -40,7 +40,7 @@ function LoginForm() {
       <CardHeader className="space-y-1 text-center">
         <CardTitle className="text-2xl font-bold">登录</CardTitle>
         <CardDescription>
-          请输入您的昵称和密码进行登录
+          请输入您的邮箱和密码进行登录
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -51,13 +51,13 @@ function LoginForm() {
             </Alert>
           )}
           <div className="space-y-2">
-            <Label htmlFor="nickname">昵称</Label>
+            <Label htmlFor="email">邮箱</Label>
             <Input
-              id="nickname"
-              type="text"
-              placeholder="nickname"
-              value={nickname}
-              onChange={(e) => setNickname(e.target.value)}
+              id="email"
+              type="email"
+              placeholder="your@edu.cn"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
               required
             />
           </div>

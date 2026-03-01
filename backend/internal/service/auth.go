@@ -160,9 +160,9 @@ func (s *AuthService) ReauthByEmail(ctx context.Context, nickname, emailAddr, co
 	return s.issueTokens(ctx, user)
 }
 
-// Login authenticates a registered (non-guest) user by nickname and password.
-func (s *AuthService) Login(ctx context.Context, nickname, password string) (access, refresh string, err error) {
-	user, err := s.db.User.Query().Where(entuser.Nickname(nickname)).Only(ctx)
+// Login authenticates a registered (non-guest) user by email and password.
+func (s *AuthService) Login(ctx context.Context, email, password string) (access, refresh string, err error) {
+	user, err := s.db.User.Query().Where(entuser.EmailEQ(email)).Only(ctx)
 	if err != nil || user.IsGuest {
 		return "", "", errors.New("invalid credentials")
 	}

@@ -2,9 +2,17 @@
 
 import { useState } from "react"
 import Link from "next/link"
+import { ArrowLeft } from "lucide-react"
 import { api, APIError, saveTokens } from "@/lib/api"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { useVoteStore } from "@/hooks/useVoteStore"
 
 export function Verify() {
@@ -12,20 +20,23 @@ export function Verify() {
   const [method, setMethod] = useState<"question" | "email">("question")
   const [nickname, setNickname] = useState("")
   const [answer, setAnswer] = useState("")
-  const [email, setEmail] = useState("")
+  const [emailLocal, setEmailLocal] = useState("")
+  const [emailSuffix, setEmailSuffix] = useState(schoolDetail?.email_suffixes?.[0] ?? "")
   const [code, setCode] = useState("")
   const [codeSent, setCodeSent] = useState(false)
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
 
   const question = schoolDetail?.verification_questions?.[0]?.question
+  const suffixes = schoolDetail?.email_suffixes ?? []
+  const fullEmail = emailLocal + (emailSuffix || (suffixes[0] ?? ""))
 
   async function handleSendCode() {
     if (!school) return
     setLoading(true)
     setError("")
     try {
-      await api.auth.sendCode(email, school.code)
+      await api.auth.sendCode(fullEmail, school.code)
       setCodeSent(true)
     } catch (err) {
       setError(err instanceof APIError ? err.message : "发送失败，请重试")
@@ -47,7 +58,7 @@ export function Verify() {
         school_code: school.code,
         method,
         answer: method === "question" ? answer : undefined,
-        email: method === "email" ? email : undefined,
+        email: method === "email" ? fullEmail : undefined,
         code: method === "email" ? code : undefined,
       })
       if ("conflict" in res) {
@@ -70,8 +81,21 @@ export function Verify() {
   return (
     <Card className="max-w-md mx-auto">
       <CardHeader>
-        <CardTitle>验证身份</CardTitle>
-        <CardDescription>{school?.name}</CardDescription>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => goTo("select-school")}
+            disabled={loading}
+            className="-ml-2 shrink-0"
+          >
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
+          <div>
+            <CardTitle>验证身份</CardTitle>
+            <CardDescription>{school?.name}</CardDescription>
+          </div>
+        </div>
       </CardHeader>
       <CardContent className="space-y-4">
         {/* Nickname */}
@@ -122,17 +146,38 @@ export function Verify() {
             <div className="space-y-1">
               <label className="text-sm font-medium">教育邮箱</label>
               <div className="flex gap-2">
-                <input
-                  className="flex-1 rounded-md border border-input bg-background px-3 py-2 text-sm"
-                  placeholder={schoolDetail?.email_suffixes?.[0] ?? "your@edu.cn"}
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                />
+                <div className="flex flex-1 items-center rounded-md border border-input overflow-hidden">
+                  <input
+                    className="flex-1 bg-background px-3 py-2 text-sm outline-none"
+                    placeholder="用户名"
+                    value={emailLocal}
+                    onChange={(e) => setEmailLocal(e.target.value)}
+                  />
+                  {suffixes.length > 1 ? (
+                    <Select
+                      value={emailSuffix || suffixes[0]}
+                      onValueChange={setEmailSuffix}
+                    >
+                      <SelectTrigger className="w-auto border-0 border-l rounded-none shrink-0 text-muted-foreground text-sm focus:ring-0">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {suffixes.map((s) => (
+                          <SelectItem key={s} value={s}>{s}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  ) : (
+                    <span className="px-3 py-2 text-sm text-muted-foreground border-l bg-muted/30 shrink-0">
+                      {suffixes[0] ?? "@edu.cn"}
+                    </span>
+                  )}
+                </div>
                 <Button
                   size="sm"
                   variant="outline"
                   onClick={handleSendCode}
-                  disabled={!email || loading}
+                  disabled={!emailLocal || loading}
                 >
                   {codeSent ? "重新发送" : "发送验证码"}
                 </Button>
