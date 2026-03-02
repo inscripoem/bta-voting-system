@@ -92,7 +92,9 @@ func main() {
 	jwtMW := apimw.JWT(jwtSvc)
 
 	// Auth
+	v1.GET("/auth/check-nickname", authH.CheckNickname)
 	v1.POST("/auth/guest", authH.Guest)
+	v1.POST("/auth/claim-nickname", authH.ClaimNickname)
 	v1.POST("/auth/register", authH.RegisterDirect)
 	v1.POST("/auth/send-code", authH.SendCode)
 	v1.POST("/auth/login", authH.Login)

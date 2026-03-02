@@ -11,6 +11,7 @@ interface VoteStore {
   schoolDetail: SchoolDetail | null
   session: VotingSession | null
   conflictType: "same_school" | "different_school" | null
+  conflictIsGuest: boolean
   pendingNickname: string
   verifiedEmail: string | null
   verificationMethod: "question" | "email" | null
@@ -18,7 +19,7 @@ interface VoteStore {
   setSession: (session: VotingSession) => void
   goTo: (step: VoteStep) => void
   setNickname: (nickname: string) => void
-  setConflict: (type: "same_school" | "different_school", nickname: string) => void
+  setConflict: (type: "same_school" | "different_school", nickname: string, isGuest?: boolean) => void
   setVerificationResult: (method: "question" | "email", email: string | null) => void
   reset: () => void
 }
@@ -29,6 +30,7 @@ export const useVoteStore = create<VoteStore>((set) => ({
   schoolDetail: null,
   session: null,
   conflictType: null,
+  conflictIsGuest: false,
   pendingNickname: "",
   verifiedEmail: null,
   verificationMethod: null,
@@ -36,8 +38,8 @@ export const useVoteStore = create<VoteStore>((set) => ({
   setSession: (session) => set({ session }),
   goTo: (step) => set({ step }),
   setNickname: (pendingNickname) => set({ pendingNickname }),
-  setConflict: (conflictType, pendingNickname) =>
-    set({ conflictType, pendingNickname, step: "conflict" }),
+  setConflict: (conflictType, pendingNickname, isGuest) =>
+    set({ conflictType, pendingNickname, conflictIsGuest: isGuest ?? false, step: "conflict" }),
   setVerificationResult: (verificationMethod, verifiedEmail) =>
     set({ verificationMethod, verifiedEmail }),
   reset: () =>
@@ -47,6 +49,7 @@ export const useVoteStore = create<VoteStore>((set) => ({
       schoolDetail: null,
       session: null,
       conflictType: null,
+      conflictIsGuest: false,
       pendingNickname: "",
       verifiedEmail: null,
       verificationMethod: null,

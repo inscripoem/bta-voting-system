@@ -8,51 +8,25 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Checkbox } from "@/components/ui/checkbox"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 
 export function Register() {
-  const { verifiedEmail, verificationMethod, goTo } = useVoteStore()
+  const { verifiedEmail, goTo } = useVoteStore()
   const refreshAuth = useAuthStore((s) => s.refresh)
 
-  const canReuseEmail = verificationMethod === "email" && !!verifiedEmail
-  const [useVerifiedEmail, setUseVerifiedEmail] = useState(canReuseEmail)
-  const [email, setEmail] = useState("")
-  const [code, setCode] = useState("")
-  const [codeSent, setCodeSent] = useState(false)
   const [password, setPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-
-  const handleSendCode = async () => {
-    setLoading(true)
-    setError(null)
-    try {
-      await api.auth.sendCode(email)
-      setCodeSent(true)
-    } catch (err: any) {
-      setError(err instanceof APIError ? err.message : "发送失败，请重试")
-    } finally {
-      setLoading(false)
-    }
-  }
 
   const handleRegisterAndVote = async () => {
     if (password !== confirmPassword) {
       setError("两次输入的密码不一致")
       return
     }
-    if (!useVerifiedEmail && (!email || !code)) {
-      setError("请完成邮箱验证")
-      return
-    }
     setLoading(true)
     setError(null)
     try {
-      if (!useVerifiedEmail) {
-        await api.auth.verifyEmail(email, code)
-      }
       await api.auth.upgrade(password)
       await refreshAuth()
       goTo("vote")
@@ -92,59 +66,10 @@ export function Register() {
             </Alert>
           )}
 
-          <div className="flex items-center gap-2">
-            <Checkbox
-              id="reuse-email-checkbox"
-              checked={useVerifiedEmail}
-              onCheckedChange={(v) => setUseVerifiedEmail(Boolean(v))}
-              disabled={!canReuseEmail}
-            />
-            <Label
-              htmlFor="reuse-email-checkbox"
-              className={`text-sm font-normal cursor-pointer select-none ${!canReuseEmail ? "text-muted-foreground" : ""}`}
-            >
-              使用已验证的教育邮箱
-            </Label>
-          </div>
-
-          {useVerifiedEmail && canReuseEmail ? (
+          {verifiedEmail && (
             <div className="space-y-2">
-              <Label>已验证邮箱</Label>
-              <Input value={verifiedEmail!} disabled className="bg-muted" />
-            </div>
-          ) : (
-            <div className="space-y-3">
-              <div className="space-y-2">
-                <Label htmlFor="reg-email">注册邮箱</Label>
-                <div className="flex gap-2">
-                  <Input
-                    id="reg-email"
-                    type="email"
-                    placeholder="your@email.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                  />
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleSendCode}
-                    disabled={!email || loading}
-                  >
-                    {codeSent ? "重发" : "发送"}
-                  </Button>
-                </div>
-              </div>
-              {codeSent && (
-                <div className="space-y-2">
-                  <Label htmlFor="reg-code">验证码</Label>
-                  <Input
-                    id="reg-code"
-                    placeholder="6位验证码"
-                    value={code}
-                    onChange={(e) => setCode(e.target.value)}
-                  />
-                </div>
-              )}
+              <Label>绑定邮箱</Label>
+              <Input value={verifiedEmail} disabled className="bg-muted" />
             </div>
           )}
 

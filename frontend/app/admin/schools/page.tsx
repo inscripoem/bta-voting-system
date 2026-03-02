@@ -290,7 +290,8 @@ function SchoolsContent() {
                 <TagInput
                   value={editingSchool.email_suffixes || []}
                   onChange={(tags) => setEditingSchool({ ...editingSchool, email_suffixes: tags })}
-                  placeholder="例如: edu.cn"
+                  placeholder="pku.edu.cn"
+                  prefix="@"
                 />
               </div>
               <div className="grid gap-2">
@@ -349,7 +350,8 @@ function SchoolsContent() {
               <TagInput
                 value={newSchool.email_suffixes}
                 onChange={(tags) => setNewSchool({ ...newSchool, email_suffixes: tags })}
-                placeholder="例如: edu.cn"
+                placeholder="pku.edu.cn"
+                prefix="@"
               />
             </div>
             <div className="grid gap-2">

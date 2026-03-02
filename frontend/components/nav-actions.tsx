@@ -19,6 +19,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { useAuthStore } from "@/hooks/useAuthStore"
+import { useVoteStore } from "@/hooks/useVoteStore"
 
 export function NavActions() {
   const router = useRouter()
@@ -31,6 +32,7 @@ export function NavActions() {
   const handleLogout = () => {
     clearTokens()
     clear()
+    useVoteStore.getState().reset()
     router.push("/auth/login")
   }
 
