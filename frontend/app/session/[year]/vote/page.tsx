@@ -51,7 +51,7 @@ export default function SessionVotePage() {
         return
       }
 
-      // If already logged in as a registered user, skip verification flow
+      // If already logged in, skip verification flow
       try {
         const me = await api.me.get()
         refreshAuth()
@@ -64,9 +64,17 @@ export default function SessionVotePage() {
             // Registered user (e.g. super_admin) with no school association
             setAdminNoSchool(true)
           }
+        } else if (me.school_code) {
+          // Guest user who has already verified — skip to vote
+          const schoolDetail = await api.schools.get(me.school_code)
+          store.setSchool(schoolDetail, schoolDetail)
+          store.goTo("vote")
         }
       } catch {
-        // Not logged in or guest — proceed with normal verification flow
+        // Not logged in — reset any stale vote state
+        if (store.step === "vote") {
+          store.reset()
+        }
       } finally {
         setLoading(false)
       }

@@ -20,7 +20,7 @@ func (User) Fields() []ent.Field {
 	return []ent.Field{
 		field.UUID("id", uuid.UUID{}).Default(uuid.New),
 		field.String("nickname").Unique().NotEmpty(),
-		field.String("email").Optional().Nillable(),
+		field.String("email").Optional().Nillable().Unique(),
 		field.String("password_hash").Optional().Nillable().Sensitive(),
 		field.Enum("role").Values("voter", "school_admin", "super_admin").Default("voter"),
 		field.Bool("is_guest").Default(true),

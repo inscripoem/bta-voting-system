@@ -21,13 +21,12 @@ func NewAuthHandler(auth *service.AuthService, frontendURL string) *AuthHandler 
 }
 
 type guestRequest struct {
-	Nickname   string `json:"nickname"`
-	SchoolCode string `json:"school_code"`
-	Method     string `json:"method"` // "question" | "email"
-	Answer     string `json:"answer"`
-	Email      string `json:"email"`
-	Code       string `json:"code"`
-	Reauth     bool   `json:"reauth"` // true = re-authentication for conflict resolution
+	Nickname   string   `json:"nickname"`
+	SchoolCode string   `json:"school_code"`
+	Method     string   `json:"method"` // "question" | "email"
+	Answers    []string `json:"answers"`
+	Email      string   `json:"email"`
+	Code       string   `json:"code"`
 }
 
 func (h *AuthHandler) Guest(c echo.Context) error {
@@ -43,37 +42,29 @@ func (h *AuthHandler) Guest(c echo.Context) error {
 	var access, refresh string
 	var err error
 
-	if req.Reauth {
-		// Re-authentication flow for nickname conflict resolution
-		switch req.Method {
-		case "question":
-			access, refresh, err = h.auth.ReauthByQuestion(ctx, req.Nickname, req.SchoolCode, req.Answer)
-		case "email":
-			access, refresh, err = h.auth.ReauthByEmail(ctx, req.Nickname, req.Email, req.Code)
-		default:
-			return echo.NewHTTPError(http.StatusBadRequest, "invalid method")
-		}
-	} else {
-		switch req.Method {
-		case "question":
-			access, refresh, err = h.auth.GuestByQuestion(ctx, req.Nickname, req.SchoolCode, req.Answer, ip, ua)
-		case "email":
-			access, refresh, err = h.auth.GuestByEmail(ctx, req.Nickname, req.Email, req.Code, ip, ua)
-		default:
-			return echo.NewHTTPError(http.StatusBadRequest, "invalid method")
-		}
+	switch req.Method {
+	case "question":
+		access, refresh, err = h.auth.GuestByQuestion(ctx, req.Nickname, req.SchoolCode, req.Answers, req.Email, req.Code, ip, ua)
+	case "email":
+		access, refresh, err = h.auth.GuestByEmail(ctx, req.Nickname, req.Email, req.Code, ip, ua)
+	default:
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid method")
 	}
 
 	if err != nil {
 		switch err {
-		case service.ErrNicknameConflictSameSchool:
-			return c.JSON(http.StatusConflict, map[string]string{"conflict": "same_school"})
+		case service.ErrNicknameConflictSameSchoolGuest:
+			return c.JSON(http.StatusConflict, map[string]any{"conflict": "same_school", "is_guest": true})
+		case service.ErrNicknameConflictSameSchoolFormal:
+			return c.JSON(http.StatusConflict, map[string]any{"conflict": "same_school", "is_guest": false})
 		case service.ErrNicknameConflictDifferentSchool:
-			return c.JSON(http.StatusConflict, map[string]string{"conflict": "different_school"})
+			return c.JSON(http.StatusConflict, map[string]any{"conflict": "different_school"})
 		case service.ErrWrongAnswer:
 			return echo.NewHTTPError(http.StatusUnauthorized, "wrong answer")
 		case service.ErrInvalidCode:
 			return echo.NewHTTPError(http.StatusUnauthorized, "invalid or expired code")
+		case service.ErrEmailCodeRequired:
+			return echo.NewHTTPError(http.StatusBadRequest, "email and code are required for question method")
 		case service.ErrEmailSuffixNotAllowed:
 			return echo.NewHTTPError(http.StatusBadRequest, "email suffix not allowed for this school")
 		case service.ErrSchoolNotFound:
@@ -83,6 +74,65 @@ func (h *AuthHandler) Guest(c echo.Context) error {
 		}
 	}
 
+	return c.JSON(http.StatusOK, map[string]string{
+		"access_token":  access,
+		"refresh_token": refresh,
+	})
+}
+
+func (h *AuthHandler) CheckNickname(c echo.Context) error {
+	nickname := c.QueryParam("nickname")
+	schoolCode := c.QueryParam("school_code")
+	if nickname == "" || schoolCode == "" {
+		return echo.NewHTTPError(http.StatusBadRequest, "nickname and school_code are required")
+	}
+	result, err := h.auth.CheckNickname(c.Request().Context(), nickname, schoolCode)
+	if err != nil {
+		if err == service.ErrSchoolNotFound {
+			return echo.NewHTTPError(http.StatusNotFound, "school not found")
+		}
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+	resp := map[string]any{"available": result.Available}
+	if !result.Available {
+		resp["conflict"] = result.ConflictType
+		if result.ConflictType == "same_school" && result.IsGuest != nil {
+			resp["is_guest"] = *result.IsGuest
+		}
+	}
+	return c.JSON(http.StatusOK, resp)
+}
+
+type claimNicknameRequest struct {
+	Nickname   string `json:"nickname"`
+	SchoolCode string `json:"school_code"`
+	Email      string `json:"email"`
+	Code       string `json:"code"`
+}
+
+func (h *AuthHandler) ClaimNickname(c echo.Context) error {
+	var req claimNicknameRequest
+	if err := c.Bind(&req); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+	if req.Nickname == "" || req.SchoolCode == "" || req.Email == "" || req.Code == "" {
+		return echo.NewHTTPError(http.StatusBadRequest, "all fields required")
+	}
+	access, refresh, err := h.auth.ClaimNickname(c.Request().Context(), req.Nickname, req.SchoolCode, req.Email, req.Code)
+	if err != nil {
+		switch err {
+		case service.ErrInvalidCode:
+			return echo.NewHTTPError(http.StatusUnauthorized, "invalid or expired code")
+		case service.ErrEmailMismatch:
+			return c.JSON(http.StatusConflict, map[string]string{"conflict": "email_mismatch"})
+		case service.ErrNicknameConflictSameSchoolFormal:
+			return echo.NewHTTPError(http.StatusForbidden, "cannot claim formal user account")
+		case service.ErrSchoolNotFound:
+			return echo.NewHTTPError(http.StatusNotFound, "school not found")
+		default:
+			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		}
+	}
 	return c.JSON(http.StatusOK, map[string]string{
 		"access_token":  access,
 		"refresh_token": refresh,
@@ -113,13 +163,13 @@ func (h *AuthHandler) SendCode(c echo.Context) error {
 }
 
 type registerDirectRequest struct {
-	Nickname   string `json:"nickname"`
-	SchoolCode string `json:"school_code"`
-	Method     string `json:"method"` // "question" | "email"
-	Answer     string `json:"answer"`
-	Email      string `json:"email"`
-	Code       string `json:"code"`
-	Password   string `json:"password"`
+	Nickname   string   `json:"nickname"`
+	SchoolCode string   `json:"school_code"`
+	Method     string   `json:"method"` // "question" | "email"
+	Answers    []string `json:"answers"`
+	Email      string   `json:"email"`
+	Code       string   `json:"code"`
+	Password   string   `json:"password"`
 }
 
 func (h *AuthHandler) RegisterDirect(c echo.Context) error {
@@ -140,7 +190,7 @@ func (h *AuthHandler) RegisterDirect(c echo.Context) error {
 
 	switch req.Method {
 	case "question":
-		access, refresh, err = h.auth.RegisterByQuestion(ctx, req.Nickname, req.SchoolCode, req.Answer, req.Email, req.Code, req.Password, ip, ua)
+		access, refresh, err = h.auth.RegisterByQuestion(ctx, req.Nickname, req.SchoolCode, req.Answers, req.Email, req.Code, req.Password, ip, ua)
 	case "email":
 		access, refresh, err = h.auth.RegisterByEmail(ctx, req.Nickname, req.Email, req.Code, req.Password, ip, ua)
 	default:
@@ -149,16 +199,20 @@ func (h *AuthHandler) RegisterDirect(c echo.Context) error {
 
 	if err != nil {
 		switch err {
-		case service.ErrNicknameConflictSameSchool:
-			return c.JSON(http.StatusConflict, map[string]string{"conflict": "same_school"})
+		case service.ErrNicknameConflictSameSchoolGuest:
+			return c.JSON(http.StatusConflict, map[string]any{"conflict": "same_school", "is_guest": true})
+		case service.ErrNicknameConflictSameSchoolFormal:
+			return c.JSON(http.StatusConflict, map[string]any{"conflict": "same_school", "is_guest": false})
 		case service.ErrNicknameConflictDifferentSchool:
-			return c.JSON(http.StatusConflict, map[string]string{"conflict": "different_school"})
+			return c.JSON(http.StatusConflict, map[string]any{"conflict": "different_school"})
 		case service.ErrWrongAnswer:
 			return echo.NewHTTPError(http.StatusUnauthorized, "wrong answer")
 		case service.ErrInvalidCode:
 			return echo.NewHTTPError(http.StatusUnauthorized, "invalid or expired code")
 		case service.ErrEmailRequired:
 			return echo.NewHTTPError(http.StatusBadRequest, "email is required")
+		case service.ErrEmailAlreadyTaken:
+			return echo.NewHTTPError(http.StatusConflict, "email already registered")
 		case service.ErrEmailSuffixNotAllowed:
 			return echo.NewHTTPError(http.StatusBadRequest, "email suffix not allowed for this school")
 		case service.ErrSchoolNotFound:

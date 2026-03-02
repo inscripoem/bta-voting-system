@@ -118,6 +118,7 @@ export interface TokenResponse {
 
 export interface ConflictResponse {
   conflict: "same_school" | "different_school"
+  is_guest?: boolean
 }
 
 export interface UserInfo {
@@ -213,7 +214,7 @@ export const api = {
       nickname: string
       school_code: string
       method: "question" | "email"
-      answer?: string
+      answers?: string[]
       email?: string
       code?: string
       password: string
@@ -236,7 +237,7 @@ export const api = {
       nickname: string
       school_code: string
       method: "question" | "email"
-      answer?: string
+      answers?: string[]
       email?: string
       code?: string
       reauth?: boolean
@@ -280,6 +281,32 @@ export const api = {
         method: "POST",
         body: JSON.stringify({ email }),
       }),
+    checkNickname: (nickname: string, schoolCode: string) =>
+      request<{ available: boolean; conflict?: "same_school" | "different_school"; is_guest?: boolean }>(
+        `/auth/check-nickname?nickname=${encodeURIComponent(nickname)}&school_code=${encodeURIComponent(schoolCode)}`
+      ),
+    claimNickname: async (body: {
+      nickname: string
+      school_code: string
+      email: string
+      code: string
+    }): Promise<TokenResponse | { conflict: "email_mismatch" }> => {
+      const token = typeof window !== "undefined" ? localStorage.getItem("access_token") : null
+      const res = await fetch(`${BASE}/auth/claim-nickname`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify(body),
+      })
+      if (res.status === 409) return res.json()
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ message: res.statusText }))
+        throw new APIError(res.status, (err as { message?: string }).message ?? res.statusText)
+      }
+      return res.json()
+    },
   },
   me: {
     get: () => request<UserInfo>("/me"),

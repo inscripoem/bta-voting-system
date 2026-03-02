@@ -22,42 +22,12 @@ import {
 
 function UpgradeFlow() {
   const router = useRouter()
-  const { refresh } = useAuthStore()
-  const [step, setStep] = useState<"email" | "code" | "password" | "done">("email")
-  const [email, setEmail] = useState("")
-  const [code, setCode] = useState("")
+  const { user, refresh } = useAuthStore()
   const [password, setPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
-
-  const handleSendCode = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setError(null)
-    setSubmitting(true)
-    try {
-      await api.auth.sendCode(email) // no school_code → any email
-      setStep("code")
-    } catch (err: any) {
-      setError(err instanceof APIError ? err.message : "发送失败，请稍后再试")
-    } finally {
-      setSubmitting(false)
-    }
-  }
-
-  const handleVerifyCode = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setError(null)
-    setSubmitting(true)
-    try {
-      await api.auth.verifyEmail(email, code)
-      setStep("password")
-    } catch (err: any) {
-      setError(err instanceof APIError ? err.message : "验证码错误")
-    } finally {
-      setSubmitting(false)
-    }
-  }
+  const [done, setDone] = useState(false)
 
   const handleSetPassword = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -70,7 +40,7 @@ function UpgradeFlow() {
     try {
       await api.auth.upgrade(password)
       await refresh()
-      setStep("done")
+      setDone(true)
     } catch (err: any) {
       setError(err instanceof APIError ? err.message : "设置密码失败")
     } finally {
@@ -82,59 +52,27 @@ function UpgradeFlow() {
     <Card className="w-full max-w-md">
       <CardHeader>
         <CardTitle>升级为正式用户</CardTitle>
-        <CardDescription>验证邮箱后设置密码，保留历年投票记录。邮箱无后缀限制。</CardDescription>
+        <CardDescription>设置密码，保留历年投票记录。</CardDescription>
       </CardHeader>
       <CardContent>
-        {error && (
-          <Alert variant="destructive" className="mb-4">
-            <AlertDescription>{error}</AlertDescription>
-          </Alert>
-        )}
-
-        {step === "email" && (
-          <form onSubmit={handleSendCode} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="email">邮箱</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="your@email.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-              />
-            </div>
-            <Button type="submit" className="w-full" disabled={submitting}>
-              {submitting ? "发送中..." : "发送验证码"}
-            </Button>
-          </form>
-        )}
-
-        {step === "code" && (
-          <form onSubmit={handleVerifyCode} className="space-y-4">
-            <p className="text-sm text-muted-foreground">验证码已发送至 <strong>{email}</strong></p>
-            <div className="space-y-2">
-              <Label htmlFor="code">验证码</Label>
-              <Input
-                id="code"
-                type="text"
-                placeholder="6位验证码"
-                value={code}
-                onChange={(e) => setCode(e.target.value)}
-                required
-              />
-            </div>
-            <Button type="submit" className="w-full" disabled={submitting}>
-              {submitting ? "验证中..." : "下一步"}
-            </Button>
-            <Button variant="link" className="w-full text-xs" onClick={() => setStep("email")}>
-              修改邮箱
-            </Button>
-          </form>
-        )}
-
-        {step === "password" && (
+        {done ? (
+          <div className="space-y-4 text-center">
+            <p className="text-sm">账号已成功升级为正式用户！</p>
+            <Button className="w-full" onClick={() => router.push("/")}>回到首页</Button>
+          </div>
+        ) : (
           <form onSubmit={handleSetPassword} className="space-y-4">
+            {error && (
+              <Alert variant="destructive">
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            )}
+            {user?.email && (
+              <div className="space-y-2">
+                <Label>绑定邮箱</Label>
+                <Input value={user.email} disabled className="bg-muted" />
+              </div>
+            )}
             <div className="space-y-2">
               <Label htmlFor="password">设置登录密码</Label>
               <Input
@@ -160,13 +98,6 @@ function UpgradeFlow() {
             </Button>
           </form>
         )}
-
-        {step === "done" && (
-          <div className="space-y-4 text-center">
-            <p className="text-sm">账号已成功升级为正式用户！</p>
-            <Button className="w-full" onClick={() => router.push("/")}>回到首页</Button>
-          </div>
-        )}
       </CardContent>
     </Card>
   )
@@ -183,7 +114,7 @@ function DirectRegisterFlow() {
   const [schoolDetail, setSchoolDetail] = useState<SchoolDetail | null>(null)
   const [method, setMethod] = useState<"question" | "email">("question")
   const [nickname, setNickname] = useState("")
-  const [answer, setAnswer] = useState("")
+  const [answers, setAnswers] = useState<string[]>([])
   const [emailLocal, setEmailLocal] = useState("")
   const [emailSuffix, setEmailSuffix] = useState("")
   const [code, setCode] = useState("")
@@ -217,7 +148,7 @@ function DirectRegisterFlow() {
 
   const suffixes = schoolDetail?.email_suffixes ?? []
   const fullEmail = emailLocal + (emailSuffix || suffixes[0] || "")
-  const question = schoolDetail?.verification_questions?.[0]?.question
+  const verificationQuestions = schoolDetail?.verification_questions ?? []
 
   const handleSendCode = async () => {
     if (!school) return
@@ -264,7 +195,7 @@ function DirectRegisterFlow() {
         nickname: nickname.trim(),
         school_code: school.code,
         method,
-        answer: method === "question" ? answer : undefined,
+        answers: method === "question" ? answers : undefined,
         email: method === "email" ? fullEmail : loginEmail,
         code: method === "email" ? code : loginCode,
         password,
@@ -380,16 +311,22 @@ function DirectRegisterFlow() {
           </div>
 
           {/* Question */}
-          {method === "question" && question && (
+          {method === "question" && verificationQuestions.length > 0 && (
             <div className="space-y-4">
-              <div className="space-y-2">
-                <Label>{question}</Label>
-                <Input
-                  placeholder="输入答案"
-                  value={answer}
-                  onChange={(e) => setAnswer(e.target.value)}
-                />
-              </div>
+              {verificationQuestions.map((q, i) => (
+                <div key={i} className="space-y-2">
+                  <Label>{q.question}</Label>
+                  <Input
+                    placeholder="输入答案"
+                    value={answers[i] ?? ""}
+                    onChange={(e) => {
+                      const next = [...answers]
+                      next[i] = e.target.value
+                      setAnswers(next)
+                    }}
+                  />
+                </div>
+              ))}
               <div className="space-y-2 border-t pt-4">
                 <Label>账户登录邮箱（任意邮箱）</Label>
                 <div className="flex gap-2">
