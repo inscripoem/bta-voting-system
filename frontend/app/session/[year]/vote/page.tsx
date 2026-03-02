@@ -8,6 +8,7 @@ import { api } from "@/lib/api"
 import { SelectSchool } from "@/app/vote/steps/SelectSchool"
 import { Nickname } from "@/app/vote/steps/Nickname"
 import { Verify } from "@/app/vote/steps/Verify"
+import { Register } from "@/app/vote/steps/Register"
 import { VoteForm } from "@/app/vote/steps/VoteForm"
 import { NicknameConflict } from "@/app/vote/steps/NicknameConflict"
 
@@ -104,6 +105,7 @@ export default function SessionVotePage() {
       {store.step === "select-school" && <SelectSchool />}
       {store.step === "nickname" && <Nickname />}
       {store.step === "verify" && <Verify />}
+      {store.step === "register" && <Register />}
       {store.step === "vote" && <VoteForm />}
       {store.step === "conflict" && <NicknameConflict />}
     </div>

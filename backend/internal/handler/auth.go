@@ -5,6 +5,7 @@ import (
 
 	"github.com/labstack/echo/v4"
 
+	"github.com/inscripoem/bta-voting-system/backend/internal/ent"
 	entuser "github.com/inscripoem/bta-voting-system/backend/internal/ent/user"
 	apimw "github.com/inscripoem/bta-voting-system/backend/internal/middleware"
 	"github.com/inscripoem/bta-voting-system/backend/internal/service"
@@ -139,7 +140,7 @@ func (h *AuthHandler) RegisterDirect(c echo.Context) error {
 
 	switch req.Method {
 	case "question":
-		access, refresh, err = h.auth.RegisterByQuestion(ctx, req.Nickname, req.SchoolCode, req.Answer, req.Password, ip, ua)
+		access, refresh, err = h.auth.RegisterByQuestion(ctx, req.Nickname, req.SchoolCode, req.Answer, req.Email, req.Code, req.Password, ip, ua)
 	case "email":
 		access, refresh, err = h.auth.RegisterByEmail(ctx, req.Nickname, req.Email, req.Code, req.Password, ip, ua)
 	default:
@@ -156,6 +157,8 @@ func (h *AuthHandler) RegisterDirect(c echo.Context) error {
 			return echo.NewHTTPError(http.StatusUnauthorized, "wrong answer")
 		case service.ErrInvalidCode:
 			return echo.NewHTTPError(http.StatusUnauthorized, "invalid or expired code")
+		case service.ErrEmailRequired:
+			return echo.NewHTTPError(http.StatusBadRequest, "email is required")
 		case service.ErrEmailSuffixNotAllowed:
 			return echo.NewHTTPError(http.StatusBadRequest, "email suffix not allowed for this school")
 		case service.ErrSchoolNotFound:
@@ -229,6 +232,17 @@ func (h *AuthHandler) Upgrade(c echo.Context) error {
 
 	if req.Password == "" {
 		return echo.NewHTTPError(http.StatusBadRequest, "password is required")
+	}
+
+	user, err := h.auth.DB().User.Query().Where(entuser.ID(claims.UserID)).Only(c.Request().Context())
+	if err != nil {
+		if ent.IsNotFound(err) {
+			return echo.NewHTTPError(http.StatusNotFound, "user not found")
+		}
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to load user")
+	}
+	if user.Email == nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "email not verified: call /auth/verify-email first")
 	}
 
 	hashed, err := service.HashPassword(req.Password)

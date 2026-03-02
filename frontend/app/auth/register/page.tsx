@@ -188,6 +188,9 @@ function DirectRegisterFlow() {
   const [emailSuffix, setEmailSuffix] = useState("")
   const [code, setCode] = useState("")
   const [codeSent, setCodeSent] = useState(false)
+  const [loginEmail, setLoginEmail] = useState("")
+  const [loginCode, setLoginCode] = useState("")
+  const [loginCodeSent, setLoginCodeSent] = useState(false)
   const [password, setPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
   const [error, setError] = useState<string | null>(null)
@@ -230,9 +233,26 @@ function DirectRegisterFlow() {
     }
   }
 
+  const handleSendLoginCode = async () => {
+    setSubmitting(true)
+    setError(null)
+    try {
+      await api.auth.sendCode(loginEmail)
+      setLoginCodeSent(true)
+    } catch (err: any) {
+      setError(err instanceof APIError ? err.message : "发送失败")
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!school) return
+    if (method === "question" && (!loginEmail || !loginCode)) {
+      setError("请输入邮箱并完成验证码验证")
+      return
+    }
     if (password !== confirmPassword) {
       setError("两次输入的密码不一致")
       return
@@ -245,8 +265,8 @@ function DirectRegisterFlow() {
         school_code: school.code,
         method,
         answer: method === "question" ? answer : undefined,
-        email: method === "email" ? fullEmail : undefined,
-        code: method === "email" ? code : undefined,
+        email: method === "email" ? fullEmail : loginEmail,
+        code: method === "email" ? code : loginCode,
         password,
       })
       if ("conflict" in res) {
@@ -361,13 +381,42 @@ function DirectRegisterFlow() {
 
           {/* Question */}
           {method === "question" && question && (
-            <div className="space-y-2">
-              <Label>{question}</Label>
-              <Input
-                placeholder="输入答案"
-                value={answer}
-                onChange={(e) => setAnswer(e.target.value)}
-              />
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label>{question}</Label>
+                <Input
+                  placeholder="输入答案"
+                  value={answer}
+                  onChange={(e) => setAnswer(e.target.value)}
+                />
+              </div>
+              <div className="space-y-2 border-t pt-4">
+                <Label>账户登录邮箱（任意邮箱）</Label>
+                <div className="flex gap-2">
+                  <Input
+                    type="email"
+                    placeholder="your@email.com"
+                    value={loginEmail}
+                    onChange={(e) => setLoginEmail(e.target.value)}
+                  />
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    onClick={handleSendLoginCode}
+                    disabled={!loginEmail || submitting}
+                  >
+                    {loginCodeSent ? "重发" : "发送"}
+                  </Button>
+                </div>
+                {loginCodeSent && (
+                  <Input
+                    placeholder="6位验证码"
+                    value={loginCode}
+                    onChange={(e) => setLoginCode(e.target.value)}
+                  />
+                )}
+              </div>
             </div>
           )}
 

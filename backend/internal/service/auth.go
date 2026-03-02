@@ -21,6 +21,7 @@ var (
 	ErrNicknameConflictSameSchool      = errors.New("nickname_conflict_same_school")
 	ErrNicknameConflictDifferentSchool = errors.New("nickname_conflict_different_school")
 	ErrWrongAnswer                     = errors.New("wrong_answer")
+	ErrEmailRequired                   = errors.New("email_required")
 	ErrEmailSuffixNotAllowed           = errors.New("email_suffix_not_allowed")
 	ErrInvalidCode                     = errors.New("invalid_or_expired_code")
 	ErrSchoolNotFound                  = errors.New("school_not_found")
@@ -164,8 +165,8 @@ func (s *AuthService) ReauthByEmail(ctx context.Context, nickname, emailAddr, co
 	return s.issueTokens(ctx, user)
 }
 
-// RegisterByQuestion creates a registered (non-guest) user via verification question.
-func (s *AuthService) RegisterByQuestion(ctx context.Context, nickname, schoolCode, answer, password, ip, ua string) (access, refresh string, err error) {
+// RegisterByQuestion creates a registered (non-guest) user via verification question + email code.
+func (s *AuthService) RegisterByQuestion(ctx context.Context, nickname, schoolCode, answer, emailAddr, emailCode, password, ip, ua string) (access, refresh string, err error) {
 	school, err := s.db.School.Query().Where(entschool.Code(schoolCode)).Only(ctx)
 	if err != nil {
 		return "", "", ErrSchoolNotFound
@@ -177,7 +178,19 @@ func (s *AuthService) RegisterByQuestion(ctx context.Context, nickname, schoolCo
 			return "", "", ErrWrongAnswer
 		}
 	}
-	return s.createRegistered(ctx, nickname, school, nil, password)
+	if strings.TrimSpace(emailAddr) == "" {
+		return "", "", ErrEmailRequired
+	}
+	s.mu.RLock()
+	entry, ok := s.codes[emailAddr]
+	s.mu.RUnlock()
+	if !ok || entry.code != emailCode || time.Now().After(entry.expiresAt) {
+		return "", "", ErrInvalidCode
+	}
+	s.mu.Lock()
+	delete(s.codes, emailAddr)
+	s.mu.Unlock()
+	return s.createRegistered(ctx, nickname, school, &emailAddr, password)
 }
 
 // RegisterByEmail creates a registered (non-guest) user via school email verification code.

@@ -3,6 +3,7 @@
 import { useEffect, Suspense } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
+import { User } from "lucide-react"
 import { clearTokens } from "@/lib/api"
 import { Button } from "@/components/ui/button"
 import { navigationMenuTriggerStyle } from "@/components/ui/navigation-menu"
@@ -46,6 +47,13 @@ export function NavActions() {
       {user && user.is_guest && (
         <Link href="/auth/register" className={navigationMenuTriggerStyle()}>
           升级账号
+        </Link>
+      )}
+
+      {user && (
+        <Link href="/account" className={`${navigationMenuTriggerStyle()} flex items-center gap-1.5`}>
+          <User className="h-4 w-4" />
+          <span>{user.nickname}</span>
         </Link>
       )}
 

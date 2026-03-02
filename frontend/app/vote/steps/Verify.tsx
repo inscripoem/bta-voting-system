@@ -1,7 +1,6 @@
 "use client"
 
 import { useState } from "react"
-import Link from "next/link"
 import { ArrowLeft } from "lucide-react"
 import { api, APIError, saveTokens } from "@/lib/api"
 import { Button } from "@/components/ui/button"
@@ -17,7 +16,7 @@ import { useVoteStore } from "@/hooks/useVoteStore"
 import { useAuthStore } from "@/hooks/useAuthStore"
 
 export function Verify() {
-  const { school, schoolDetail, pendingNickname, goTo, setConflict } = useVoteStore()
+  const { school, schoolDetail, pendingNickname, goTo, setConflict, setVerificationResult } = useVoteStore()
   const refreshAuth = useAuthStore((s) => s.refresh)
   const [method, setMethod] = useState<"question" | "email">("question")
   const [answer, setAnswer] = useState("")
@@ -69,7 +68,8 @@ export function Verify() {
       }
       saveTokens(res.access_token, res.refresh_token)
       await refreshAuth()
-      goTo("vote")
+      setVerificationResult(method, method === "email" ? fullEmail : null)
+      goTo("register")
     } catch (err) {
       setError(err instanceof APIError ? err.message : "验证失败，请重试")
     } finally {
@@ -187,19 +187,9 @@ export function Verify() {
 
         {error && <p className="text-sm text-destructive">{error}</p>}
 
-        <div className="space-y-2">
-          <Button className="w-full" onClick={handleSubmit} disabled={loading}>
-            {loading ? "验证中…" : "确认"}
-          </Button>
-
-          <p className="text-xs text-muted-foreground text-center mt-2">
-            你也可以选择
-            <br />
-            <Link href="/auth/register" className="underline">
-              注册正式用户，保留历年记录
-            </Link>
-          </p>
-        </div>
+        <Button className="w-full" onClick={handleSubmit} disabled={loading}>
+          {loading ? "验证中…" : "确认"}
+        </Button>
       </CardContent>
     </Card>
   )
