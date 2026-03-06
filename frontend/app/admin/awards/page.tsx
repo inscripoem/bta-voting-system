@@ -874,7 +874,8 @@ function NomineeFormDialog({
 
     if (comboConfig) {
       try {
-        const rawRes = await fetch(`https://api.bgm.tv${comboConfig.nomToRel(item.id)}`).then(r => r.json())
+        let rawRes = await fetch(`https://api.bgm.tv${comboConfig.nomToRel(item.id)}`).then(r => r.json())
+        if (!Array.isArray(rawRes)) rawRes = []
         const uniqueRes = Array.from(new Map((rawRes || []).map((x: any) => [x.id || x.subject_id, x])).values())
         setCachedNomRels(uniqueRes || [])
         setRelDropdown({ isOpen: !selectedRelatedId, data: uniqueRes, type: 'cached' })
@@ -922,7 +923,7 @@ function NomineeFormDialog({
     if (comboConfig) {
       try {
         let rawRes = await fetch(`https://api.bgm.tv${comboConfig.relToNom(itemId)}`).then(r => r.json())
-        rawRes = rawRes || []
+        if (!Array.isArray(rawRes)) rawRes = []
         if (award.type === "staff") {
           rawRes = rawRes.filter((x: any) => {
             const rel = x.relation || ""
