@@ -50,6 +50,7 @@ type AwardMutation struct {
 	name              *string
 	description       *string
 	category          *award.Category
+	_type             *award.Type
 	score_config      *schema.ScoreConfig
 	display_order     *int
 	adddisplay_order  *int
@@ -366,6 +367,42 @@ func (m *AwardMutation) ResetCategory() {
 	m.category = nil
 }
 
+// SetType sets the "type" field.
+func (m *AwardMutation) SetType(a award.Type) {
+	m._type = &a
+}
+
+// GetType returns the value of the "type" field in the mutation.
+func (m *AwardMutation) GetType() (r award.Type, exists bool) {
+	v := m._type
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldType returns the old "type" field's value of the Award entity.
+// If the Award object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *AwardMutation) OldType(ctx context.Context) (v award.Type, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldType is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldType requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldType: %w", err)
+	}
+	return oldValue.Type, nil
+}
+
+// ResetType resets all changes to the "type" field.
+func (m *AwardMutation) ResetType() {
+	m._type = nil
+}
+
 // SetScoreConfig sets the "score_config" field.
 func (m *AwardMutation) SetScoreConfig(sc schema.ScoreConfig) {
 	m.score_config = &sc
@@ -678,7 +715,7 @@ func (m *AwardMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *AwardMutation) Fields() []string {
-	fields := make([]string, 0, 7)
+	fields := make([]string, 0, 8)
 	if m.created_at != nil {
 		fields = append(fields, award.FieldCreatedAt)
 	}
@@ -693,6 +730,9 @@ func (m *AwardMutation) Fields() []string {
 	}
 	if m.category != nil {
 		fields = append(fields, award.FieldCategory)
+	}
+	if m._type != nil {
+		fields = append(fields, award.FieldType)
 	}
 	if m.score_config != nil {
 		fields = append(fields, award.FieldScoreConfig)
@@ -718,6 +758,8 @@ func (m *AwardMutation) Field(name string) (ent.Value, bool) {
 		return m.Description()
 	case award.FieldCategory:
 		return m.Category()
+	case award.FieldType:
+		return m.GetType()
 	case award.FieldScoreConfig:
 		return m.ScoreConfig()
 	case award.FieldDisplayOrder:
@@ -741,6 +783,8 @@ func (m *AwardMutation) OldField(ctx context.Context, name string) (ent.Value, e
 		return m.OldDescription(ctx)
 	case award.FieldCategory:
 		return m.OldCategory(ctx)
+	case award.FieldType:
+		return m.OldType(ctx)
 	case award.FieldScoreConfig:
 		return m.OldScoreConfig(ctx)
 	case award.FieldDisplayOrder:
@@ -788,6 +832,13 @@ func (m *AwardMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetCategory(v)
+		return nil
+	case award.FieldType:
+		v, ok := value.(award.Type)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetType(v)
 		return nil
 	case award.FieldScoreConfig:
 		v, ok := value.(schema.ScoreConfig)
@@ -890,6 +941,9 @@ func (m *AwardMutation) ResetField(name string) error {
 		return nil
 	case award.FieldCategory:
 		m.ResetCategory()
+		return nil
+	case award.FieldType:
+		m.ResetType()
 		return nil
 	case award.FieldScoreConfig:
 		m.ResetScoreConfig()
@@ -1050,25 +1104,29 @@ func (m *AwardMutation) ResetEdge(name string) error {
 // NomineeMutation represents an operation that mutates the Nominee nodes in the graph.
 type NomineeMutation struct {
 	config
-	op                Op
-	typ               string
-	id                *uuid.UUID
-	created_at        *time.Time
-	updated_at        *time.Time
-	name              *string
-	cover_image_key   *string
-	description       *string
-	display_order     *int
-	adddisplay_order  *int
-	clearedFields     map[string]struct{}
-	award             *uuid.UUID
-	clearedaward      bool
-	vote_items        map[uuid.UUID]struct{}
-	removedvote_items map[uuid.UUID]struct{}
-	clearedvote_items bool
-	done              bool
-	oldValue          func(context.Context) (*Nominee, error)
-	predicates        []predicate.Nominee
+	op                 Op
+	typ                string
+	id                 *uuid.UUID
+	created_at         *time.Time
+	updated_at         *time.Time
+	name               *string
+	cover_image_key    *string
+	description        *string
+	display_order      *int
+	adddisplay_order   *int
+	bangumi_id         *string
+	related_bangumi_id *string
+	related_name       *string
+	related_image_url  *string
+	clearedFields      map[string]struct{}
+	award              *uuid.UUID
+	clearedaward       bool
+	vote_items         map[uuid.UUID]struct{}
+	removedvote_items  map[uuid.UUID]struct{}
+	clearedvote_items  bool
+	done               bool
+	oldValue           func(context.Context) (*Nominee, error)
+	predicates         []predicate.Nominee
 }
 
 var _ ent.Mutation = (*NomineeMutation)(nil)
@@ -1437,6 +1495,202 @@ func (m *NomineeMutation) ResetDisplayOrder() {
 	m.adddisplay_order = nil
 }
 
+// SetBangumiID sets the "bangumi_id" field.
+func (m *NomineeMutation) SetBangumiID(s string) {
+	m.bangumi_id = &s
+}
+
+// BangumiID returns the value of the "bangumi_id" field in the mutation.
+func (m *NomineeMutation) BangumiID() (r string, exists bool) {
+	v := m.bangumi_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldBangumiID returns the old "bangumi_id" field's value of the Nominee entity.
+// If the Nominee object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *NomineeMutation) OldBangumiID(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldBangumiID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldBangumiID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldBangumiID: %w", err)
+	}
+	return oldValue.BangumiID, nil
+}
+
+// ClearBangumiID clears the value of the "bangumi_id" field.
+func (m *NomineeMutation) ClearBangumiID() {
+	m.bangumi_id = nil
+	m.clearedFields[nominee.FieldBangumiID] = struct{}{}
+}
+
+// BangumiIDCleared returns if the "bangumi_id" field was cleared in this mutation.
+func (m *NomineeMutation) BangumiIDCleared() bool {
+	_, ok := m.clearedFields[nominee.FieldBangumiID]
+	return ok
+}
+
+// ResetBangumiID resets all changes to the "bangumi_id" field.
+func (m *NomineeMutation) ResetBangumiID() {
+	m.bangumi_id = nil
+	delete(m.clearedFields, nominee.FieldBangumiID)
+}
+
+// SetRelatedBangumiID sets the "related_bangumi_id" field.
+func (m *NomineeMutation) SetRelatedBangumiID(s string) {
+	m.related_bangumi_id = &s
+}
+
+// RelatedBangumiID returns the value of the "related_bangumi_id" field in the mutation.
+func (m *NomineeMutation) RelatedBangumiID() (r string, exists bool) {
+	v := m.related_bangumi_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldRelatedBangumiID returns the old "related_bangumi_id" field's value of the Nominee entity.
+// If the Nominee object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *NomineeMutation) OldRelatedBangumiID(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldRelatedBangumiID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldRelatedBangumiID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldRelatedBangumiID: %w", err)
+	}
+	return oldValue.RelatedBangumiID, nil
+}
+
+// ClearRelatedBangumiID clears the value of the "related_bangumi_id" field.
+func (m *NomineeMutation) ClearRelatedBangumiID() {
+	m.related_bangumi_id = nil
+	m.clearedFields[nominee.FieldRelatedBangumiID] = struct{}{}
+}
+
+// RelatedBangumiIDCleared returns if the "related_bangumi_id" field was cleared in this mutation.
+func (m *NomineeMutation) RelatedBangumiIDCleared() bool {
+	_, ok := m.clearedFields[nominee.FieldRelatedBangumiID]
+	return ok
+}
+
+// ResetRelatedBangumiID resets all changes to the "related_bangumi_id" field.
+func (m *NomineeMutation) ResetRelatedBangumiID() {
+	m.related_bangumi_id = nil
+	delete(m.clearedFields, nominee.FieldRelatedBangumiID)
+}
+
+// SetRelatedName sets the "related_name" field.
+func (m *NomineeMutation) SetRelatedName(s string) {
+	m.related_name = &s
+}
+
+// RelatedName returns the value of the "related_name" field in the mutation.
+func (m *NomineeMutation) RelatedName() (r string, exists bool) {
+	v := m.related_name
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldRelatedName returns the old "related_name" field's value of the Nominee entity.
+// If the Nominee object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *NomineeMutation) OldRelatedName(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldRelatedName is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldRelatedName requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldRelatedName: %w", err)
+	}
+	return oldValue.RelatedName, nil
+}
+
+// ClearRelatedName clears the value of the "related_name" field.
+func (m *NomineeMutation) ClearRelatedName() {
+	m.related_name = nil
+	m.clearedFields[nominee.FieldRelatedName] = struct{}{}
+}
+
+// RelatedNameCleared returns if the "related_name" field was cleared in this mutation.
+func (m *NomineeMutation) RelatedNameCleared() bool {
+	_, ok := m.clearedFields[nominee.FieldRelatedName]
+	return ok
+}
+
+// ResetRelatedName resets all changes to the "related_name" field.
+func (m *NomineeMutation) ResetRelatedName() {
+	m.related_name = nil
+	delete(m.clearedFields, nominee.FieldRelatedName)
+}
+
+// SetRelatedImageURL sets the "related_image_url" field.
+func (m *NomineeMutation) SetRelatedImageURL(s string) {
+	m.related_image_url = &s
+}
+
+// RelatedImageURL returns the value of the "related_image_url" field in the mutation.
+func (m *NomineeMutation) RelatedImageURL() (r string, exists bool) {
+	v := m.related_image_url
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldRelatedImageURL returns the old "related_image_url" field's value of the Nominee entity.
+// If the Nominee object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *NomineeMutation) OldRelatedImageURL(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldRelatedImageURL is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldRelatedImageURL requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldRelatedImageURL: %w", err)
+	}
+	return oldValue.RelatedImageURL, nil
+}
+
+// ClearRelatedImageURL clears the value of the "related_image_url" field.
+func (m *NomineeMutation) ClearRelatedImageURL() {
+	m.related_image_url = nil
+	m.clearedFields[nominee.FieldRelatedImageURL] = struct{}{}
+}
+
+// RelatedImageURLCleared returns if the "related_image_url" field was cleared in this mutation.
+func (m *NomineeMutation) RelatedImageURLCleared() bool {
+	_, ok := m.clearedFields[nominee.FieldRelatedImageURL]
+	return ok
+}
+
+// ResetRelatedImageURL resets all changes to the "related_image_url" field.
+func (m *NomineeMutation) ResetRelatedImageURL() {
+	m.related_image_url = nil
+	delete(m.clearedFields, nominee.FieldRelatedImageURL)
+}
+
 // SetAwardID sets the "award" edge to the Award entity by id.
 func (m *NomineeMutation) SetAwardID(id uuid.UUID) {
 	m.award = &id
@@ -1564,7 +1818,7 @@ func (m *NomineeMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *NomineeMutation) Fields() []string {
-	fields := make([]string, 0, 6)
+	fields := make([]string, 0, 10)
 	if m.created_at != nil {
 		fields = append(fields, nominee.FieldCreatedAt)
 	}
@@ -1582,6 +1836,18 @@ func (m *NomineeMutation) Fields() []string {
 	}
 	if m.display_order != nil {
 		fields = append(fields, nominee.FieldDisplayOrder)
+	}
+	if m.bangumi_id != nil {
+		fields = append(fields, nominee.FieldBangumiID)
+	}
+	if m.related_bangumi_id != nil {
+		fields = append(fields, nominee.FieldRelatedBangumiID)
+	}
+	if m.related_name != nil {
+		fields = append(fields, nominee.FieldRelatedName)
+	}
+	if m.related_image_url != nil {
+		fields = append(fields, nominee.FieldRelatedImageURL)
 	}
 	return fields
 }
@@ -1603,6 +1869,14 @@ func (m *NomineeMutation) Field(name string) (ent.Value, bool) {
 		return m.Description()
 	case nominee.FieldDisplayOrder:
 		return m.DisplayOrder()
+	case nominee.FieldBangumiID:
+		return m.BangumiID()
+	case nominee.FieldRelatedBangumiID:
+		return m.RelatedBangumiID()
+	case nominee.FieldRelatedName:
+		return m.RelatedName()
+	case nominee.FieldRelatedImageURL:
+		return m.RelatedImageURL()
 	}
 	return nil, false
 }
@@ -1624,6 +1898,14 @@ func (m *NomineeMutation) OldField(ctx context.Context, name string) (ent.Value,
 		return m.OldDescription(ctx)
 	case nominee.FieldDisplayOrder:
 		return m.OldDisplayOrder(ctx)
+	case nominee.FieldBangumiID:
+		return m.OldBangumiID(ctx)
+	case nominee.FieldRelatedBangumiID:
+		return m.OldRelatedBangumiID(ctx)
+	case nominee.FieldRelatedName:
+		return m.OldRelatedName(ctx)
+	case nominee.FieldRelatedImageURL:
+		return m.OldRelatedImageURL(ctx)
 	}
 	return nil, fmt.Errorf("unknown Nominee field %s", name)
 }
@@ -1674,6 +1956,34 @@ func (m *NomineeMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetDisplayOrder(v)
+		return nil
+	case nominee.FieldBangumiID:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetBangumiID(v)
+		return nil
+	case nominee.FieldRelatedBangumiID:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetRelatedBangumiID(v)
+		return nil
+	case nominee.FieldRelatedName:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetRelatedName(v)
+		return nil
+	case nominee.FieldRelatedImageURL:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetRelatedImageURL(v)
 		return nil
 	}
 	return fmt.Errorf("unknown Nominee field %s", name)
@@ -1726,6 +2036,18 @@ func (m *NomineeMutation) ClearedFields() []string {
 	if m.FieldCleared(nominee.FieldDescription) {
 		fields = append(fields, nominee.FieldDescription)
 	}
+	if m.FieldCleared(nominee.FieldBangumiID) {
+		fields = append(fields, nominee.FieldBangumiID)
+	}
+	if m.FieldCleared(nominee.FieldRelatedBangumiID) {
+		fields = append(fields, nominee.FieldRelatedBangumiID)
+	}
+	if m.FieldCleared(nominee.FieldRelatedName) {
+		fields = append(fields, nominee.FieldRelatedName)
+	}
+	if m.FieldCleared(nominee.FieldRelatedImageURL) {
+		fields = append(fields, nominee.FieldRelatedImageURL)
+	}
 	return fields
 }
 
@@ -1745,6 +2067,18 @@ func (m *NomineeMutation) ClearField(name string) error {
 		return nil
 	case nominee.FieldDescription:
 		m.ClearDescription()
+		return nil
+	case nominee.FieldBangumiID:
+		m.ClearBangumiID()
+		return nil
+	case nominee.FieldRelatedBangumiID:
+		m.ClearRelatedBangumiID()
+		return nil
+	case nominee.FieldRelatedName:
+		m.ClearRelatedName()
+		return nil
+	case nominee.FieldRelatedImageURL:
+		m.ClearRelatedImageURL()
 		return nil
 	}
 	return fmt.Errorf("unknown Nominee nullable field %s", name)
@@ -1771,6 +2105,18 @@ func (m *NomineeMutation) ResetField(name string) error {
 		return nil
 	case nominee.FieldDisplayOrder:
 		m.ResetDisplayOrder()
+		return nil
+	case nominee.FieldBangumiID:
+		m.ResetBangumiID()
+		return nil
+	case nominee.FieldRelatedBangumiID:
+		m.ResetRelatedBangumiID()
+		return nil
+	case nominee.FieldRelatedName:
+		m.ResetRelatedName()
+		return nil
+	case nominee.FieldRelatedImageURL:
+		m.ResetRelatedImageURL()
 		return nil
 	}
 	return fmt.Errorf("unknown Nominee field %s", name)

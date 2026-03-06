@@ -39,7 +39,7 @@ func init() {
 	// award.NameValidator is a validator for the "name" field. It is called by the builders before save.
 	award.NameValidator = awardDescName.Validators[0].(func(string) error)
 	// awardDescDisplayOrder is the schema descriptor for display_order field.
-	awardDescDisplayOrder := awardFields[5].Descriptor()
+	awardDescDisplayOrder := awardFields[6].Descriptor()
 	// award.DefaultDisplayOrder holds the default value on creation for the display_order field.
 	award.DefaultDisplayOrder = awardDescDisplayOrder.Default.(int)
 	// awardDescID is the schema descriptor for id field.

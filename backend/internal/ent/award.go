@@ -32,6 +32,8 @@ type Award struct {
 	Description string `json:"description,omitempty"`
 	// Category holds the value of the "category" field.
 	Category award.Category `json:"category,omitempty"`
+	// Type holds the value of the "type" field.
+	Type award.Type `json:"type,omitempty"`
 	// ScoreConfig holds the value of the "score_config" field.
 	ScoreConfig schema.ScoreConfig `json:"score_config,omitempty"`
 	// DisplayOrder holds the value of the "display_order" field.
@@ -108,7 +110,7 @@ func (*Award) scanValues(columns []string) ([]any, error) {
 			values[i] = new([]byte)
 		case award.FieldDisplayOrder:
 			values[i] = new(sql.NullInt64)
-		case award.FieldName, award.FieldDescription, award.FieldCategory:
+		case award.FieldName, award.FieldDescription, award.FieldCategory, award.FieldType:
 			values[i] = new(sql.NullString)
 		case award.FieldCreatedAt, award.FieldUpdatedAt:
 			values[i] = new(sql.NullTime)
@@ -168,6 +170,12 @@ func (_m *Award) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field category", values[i])
 			} else if value.Valid {
 				_m.Category = award.Category(value.String)
+			}
+		case award.FieldType:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field type", values[i])
+			} else if value.Valid {
+				_m.Type = award.Type(value.String)
 			}
 		case award.FieldScoreConfig:
 			if value, ok := values[i].(*[]byte); !ok {
@@ -267,6 +275,9 @@ func (_m *Award) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("category=")
 	builder.WriteString(fmt.Sprintf("%v", _m.Category))
+	builder.WriteString(", ")
+	builder.WriteString("type=")
+	builder.WriteString(fmt.Sprintf("%v", _m.Type))
 	builder.WriteString(", ")
 	builder.WriteString("score_config=")
 	builder.WriteString(fmt.Sprintf("%v", _m.ScoreConfig))

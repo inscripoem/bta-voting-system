@@ -28,6 +28,9 @@ func (Award) Fields() []ent.Field {
 		field.String("name").NotEmpty(),
 		field.String("description").Optional(),
 		field.Enum("category").Values("mandatory", "optional", "entertainment"),
+		field.Enum("type").
+			Values("anime", "character", "staff", "seiyuu", "other").
+			Default("other"),
 		field.JSON("score_config", ScoreConfig{}),
 		field.Int("display_order").Default(0),
 	}

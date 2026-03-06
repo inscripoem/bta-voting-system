@@ -31,6 +31,14 @@ type Nominee struct {
 	Description string `json:"description,omitempty"`
 	// DisplayOrder holds the value of the "display_order" field.
 	DisplayOrder int `json:"display_order,omitempty"`
+	// BangumiID holds the value of the "bangumi_id" field.
+	BangumiID string `json:"bangumi_id,omitempty"`
+	// RelatedBangumiID holds the value of the "related_bangumi_id" field.
+	RelatedBangumiID string `json:"related_bangumi_id,omitempty"`
+	// RelatedName holds the value of the "related_name" field.
+	RelatedName string `json:"related_name,omitempty"`
+	// RelatedImageURL holds the value of the "related_image_url" field.
+	RelatedImageURL string `json:"related_image_url,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the NomineeQuery when eager-loading is set.
 	Edges          NomineeEdges `json:"edges"`
@@ -76,7 +84,7 @@ func (*Nominee) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case nominee.FieldDisplayOrder:
 			values[i] = new(sql.NullInt64)
-		case nominee.FieldName, nominee.FieldCoverImageKey, nominee.FieldDescription:
+		case nominee.FieldName, nominee.FieldCoverImageKey, nominee.FieldDescription, nominee.FieldBangumiID, nominee.FieldRelatedBangumiID, nominee.FieldRelatedName, nominee.FieldRelatedImageURL:
 			values[i] = new(sql.NullString)
 		case nominee.FieldCreatedAt, nominee.FieldUpdatedAt:
 			values[i] = new(sql.NullTime)
@@ -140,6 +148,30 @@ func (_m *Nominee) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field display_order", values[i])
 			} else if value.Valid {
 				_m.DisplayOrder = int(value.Int64)
+			}
+		case nominee.FieldBangumiID:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field bangumi_id", values[i])
+			} else if value.Valid {
+				_m.BangumiID = value.String
+			}
+		case nominee.FieldRelatedBangumiID:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field related_bangumi_id", values[i])
+			} else if value.Valid {
+				_m.RelatedBangumiID = value.String
+			}
+		case nominee.FieldRelatedName:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field related_name", values[i])
+			} else if value.Valid {
+				_m.RelatedName = value.String
+			}
+		case nominee.FieldRelatedImageURL:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field related_image_url", values[i])
+			} else if value.Valid {
+				_m.RelatedImageURL = value.String
 			}
 		case nominee.ForeignKeys[0]:
 			if value, ok := values[i].(*sql.NullScanner); !ok {
@@ -211,6 +243,18 @@ func (_m *Nominee) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("display_order=")
 	builder.WriteString(fmt.Sprintf("%v", _m.DisplayOrder))
+	builder.WriteString(", ")
+	builder.WriteString("bangumi_id=")
+	builder.WriteString(_m.BangumiID)
+	builder.WriteString(", ")
+	builder.WriteString("related_bangumi_id=")
+	builder.WriteString(_m.RelatedBangumiID)
+	builder.WriteString(", ")
+	builder.WriteString("related_name=")
+	builder.WriteString(_m.RelatedName)
+	builder.WriteString(", ")
+	builder.WriteString("related_image_url=")
+	builder.WriteString(_m.RelatedImageURL)
 	builder.WriteByte(')')
 	return builder.String()
 }

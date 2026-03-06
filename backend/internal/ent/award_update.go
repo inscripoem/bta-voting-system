@@ -88,6 +88,20 @@ func (_u *AwardUpdate) SetNillableCategory(v *award.Category) *AwardUpdate {
 	return _u
 }
 
+// SetType sets the "type" field.
+func (_u *AwardUpdate) SetType(v award.Type) *AwardUpdate {
+	_u.mutation.SetType(v)
+	return _u
+}
+
+// SetNillableType sets the "type" field if the given value is not nil.
+func (_u *AwardUpdate) SetNillableType(v *award.Type) *AwardUpdate {
+	if v != nil {
+		_u.SetType(*v)
+	}
+	return _u
+}
+
 // SetScoreConfig sets the "score_config" field.
 func (_u *AwardUpdate) SetScoreConfig(v schema.ScoreConfig) *AwardUpdate {
 	_u.mutation.SetScoreConfig(v)
@@ -290,6 +304,11 @@ func (_u *AwardUpdate) check() error {
 			return &ValidationError{Name: "category", err: fmt.Errorf(`ent: validator failed for field "Award.category": %w`, err)}
 		}
 	}
+	if v, ok := _u.mutation.GetType(); ok {
+		if err := award.TypeValidator(v); err != nil {
+			return &ValidationError{Name: "type", err: fmt.Errorf(`ent: validator failed for field "Award.type": %w`, err)}
+		}
+	}
 	if _u.mutation.SessionCleared() && len(_u.mutation.SessionIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "Award.session"`)
 	}
@@ -322,6 +341,9 @@ func (_u *AwardUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	}
 	if value, ok := _u.mutation.Category(); ok {
 		_spec.SetField(award.FieldCategory, field.TypeEnum, value)
+	}
+	if value, ok := _u.mutation.GetType(); ok {
+		_spec.SetField(award.FieldType, field.TypeEnum, value)
 	}
 	if value, ok := _u.mutation.ScoreConfig(); ok {
 		_spec.SetField(award.FieldScoreConfig, field.TypeJSON, value)
@@ -554,6 +576,20 @@ func (_u *AwardUpdateOne) SetNillableCategory(v *award.Category) *AwardUpdateOne
 	return _u
 }
 
+// SetType sets the "type" field.
+func (_u *AwardUpdateOne) SetType(v award.Type) *AwardUpdateOne {
+	_u.mutation.SetType(v)
+	return _u
+}
+
+// SetNillableType sets the "type" field if the given value is not nil.
+func (_u *AwardUpdateOne) SetNillableType(v *award.Type) *AwardUpdateOne {
+	if v != nil {
+		_u.SetType(*v)
+	}
+	return _u
+}
+
 // SetScoreConfig sets the "score_config" field.
 func (_u *AwardUpdateOne) SetScoreConfig(v schema.ScoreConfig) *AwardUpdateOne {
 	_u.mutation.SetScoreConfig(v)
@@ -769,6 +805,11 @@ func (_u *AwardUpdateOne) check() error {
 			return &ValidationError{Name: "category", err: fmt.Errorf(`ent: validator failed for field "Award.category": %w`, err)}
 		}
 	}
+	if v, ok := _u.mutation.GetType(); ok {
+		if err := award.TypeValidator(v); err != nil {
+			return &ValidationError{Name: "type", err: fmt.Errorf(`ent: validator failed for field "Award.type": %w`, err)}
+		}
+	}
 	if _u.mutation.SessionCleared() && len(_u.mutation.SessionIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "Award.session"`)
 	}
@@ -818,6 +859,9 @@ func (_u *AwardUpdateOne) sqlSave(ctx context.Context) (_node *Award, err error)
 	}
 	if value, ok := _u.mutation.Category(); ok {
 		_spec.SetField(award.FieldCategory, field.TypeEnum, value)
+	}
+	if value, ok := _u.mutation.GetType(); ok {
+		_spec.SetField(award.FieldType, field.TypeEnum, value)
 	}
 	if value, ok := _u.mutation.ScoreConfig(); ok {
 		_spec.SetField(award.FieldScoreConfig, field.TypeJSON, value)

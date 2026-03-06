@@ -27,6 +27,14 @@ const (
 	FieldDescription = "description"
 	// FieldDisplayOrder holds the string denoting the display_order field in the database.
 	FieldDisplayOrder = "display_order"
+	// FieldBangumiID holds the string denoting the bangumi_id field in the database.
+	FieldBangumiID = "bangumi_id"
+	// FieldRelatedBangumiID holds the string denoting the related_bangumi_id field in the database.
+	FieldRelatedBangumiID = "related_bangumi_id"
+	// FieldRelatedName holds the string denoting the related_name field in the database.
+	FieldRelatedName = "related_name"
+	// FieldRelatedImageURL holds the string denoting the related_image_url field in the database.
+	FieldRelatedImageURL = "related_image_url"
 	// EdgeAward holds the string denoting the award edge name in mutations.
 	EdgeAward = "award"
 	// EdgeVoteItems holds the string denoting the vote_items edge name in mutations.
@@ -58,6 +66,10 @@ var Columns = []string{
 	FieldCoverImageKey,
 	FieldDescription,
 	FieldDisplayOrder,
+	FieldBangumiID,
+	FieldRelatedBangumiID,
+	FieldRelatedName,
+	FieldRelatedImageURL,
 }
 
 // ForeignKeys holds the SQL foreign-keys that are owned by the "nominees"
@@ -132,6 +144,26 @@ func ByDescription(opts ...sql.OrderTermOption) OrderOption {
 // ByDisplayOrder orders the results by the display_order field.
 func ByDisplayOrder(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldDisplayOrder, opts...).ToFunc()
+}
+
+// ByBangumiID orders the results by the bangumi_id field.
+func ByBangumiID(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldBangumiID, opts...).ToFunc()
+}
+
+// ByRelatedBangumiID orders the results by the related_bangumi_id field.
+func ByRelatedBangumiID(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldRelatedBangumiID, opts...).ToFunc()
+}
+
+// ByRelatedName orders the results by the related_name field.
+func ByRelatedName(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldRelatedName, opts...).ToFunc()
+}
+
+// ByRelatedImageURL orders the results by the related_image_url field.
+func ByRelatedImageURL(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldRelatedImageURL, opts...).ToFunc()
 }
 
 // ByAwardField orders the results by award field.

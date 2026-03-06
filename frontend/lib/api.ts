@@ -92,6 +92,9 @@ export interface Nominee {
   cover_image_url?: string | null
   description?: string
   display_order: number
+  related_bangumi_id?: string
+  related_name?: string
+  related_image_url?: string
 }
 
 export interface Award {
@@ -99,6 +102,7 @@ export interface Award {
   name: string
   description?: string
   category: "mandatory" | "optional" | "entertainment"
+  type: "anime" | "character" | "staff" | "seiyuu" | "other"
   score_config: ScoreConfig
   display_order: number
   school_id?: string
@@ -160,6 +164,7 @@ export interface AwardListItem {
   id: string
   name: string
   category: "mandatory" | "optional" | "entertainment"
+  type: "anime" | "character" | "staff" | "seiyuu" | "other"
   score_config: ScoreConfig
   display_order: number
   session_id: string
@@ -175,6 +180,10 @@ export interface NomineeListItem {
   description?: string
   display_order: number
   award_id: string
+  bangumi_id?: string
+  related_bangumi_id?: string
+  related_name?: string
+  related_image_url?: string
 }
 
 export interface VoteItemListItem {
@@ -370,6 +379,7 @@ export const api = {
       session_id: string
       name: string
       category: string
+      type?: string
       score_config: ScoreConfig
       display_order?: number
       school_id?: string
@@ -383,6 +393,7 @@ export const api = {
       data: {
         name?: string
         category?: string
+        type?: string
         score_config?: ScoreConfig
         display_order?: number
         session_id?: string
@@ -411,6 +422,10 @@ export const api = {
       cover_image_key?: string
       description?: string
       display_order?: number
+      bangumi_id?: string
+      related_bangumi_id?: string
+      related_name?: string
+      related_image_url?: string
     }) =>
       request<{ id: string }>("/admin/nominees", {
         method: "POST",
@@ -423,6 +438,10 @@ export const api = {
         cover_image_key?: string
         description?: string
         display_order?: number
+        bangumi_id?: string
+        related_bangumi_id?: string
+        related_name?: string
+        related_image_url?: string
       }
     ) =>
       request<NomineeListItem>(`/admin/nominees/${id}`, {
