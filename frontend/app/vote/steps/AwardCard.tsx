@@ -57,7 +57,12 @@ export function AwardCard({ award, votes, onVote }: Props) {
                     <img
                       src={nominee.cover_image_url}
                       alt={nominee.name}
-                      className="w-16 h-20 sm:w-20 sm:h-28 object-cover rounded-md shadow-sm border border-border/50"
+                      className={cn(
+                        "w-16 h-20 sm:w-20 sm:h-28 object-cover rounded-md shadow-sm border border-border/50 shrink-0",
+                        ["character", "staff", "seiyuu"].includes(award.type) 
+                          ? "object-top" 
+                          : "object-center"
+                      )}
                       referrerPolicy="no-referrer"
                     />
                   ) : (
