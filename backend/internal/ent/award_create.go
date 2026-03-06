@@ -80,6 +80,20 @@ func (_c *AwardCreate) SetCategory(v award.Category) *AwardCreate {
 	return _c
 }
 
+// SetType sets the "type" field.
+func (_c *AwardCreate) SetType(v award.Type) *AwardCreate {
+	_c.mutation.SetType(v)
+	return _c
+}
+
+// SetNillableType sets the "type" field if the given value is not nil.
+func (_c *AwardCreate) SetNillableType(v *award.Type) *AwardCreate {
+	if v != nil {
+		_c.SetType(*v)
+	}
+	return _c
+}
+
 // SetScoreConfig sets the "score_config" field.
 func (_c *AwardCreate) SetScoreConfig(v schema.ScoreConfig) *AwardCreate {
 	_c.mutation.SetScoreConfig(v)
@@ -217,6 +231,10 @@ func (_c *AwardCreate) defaults() {
 		v := award.DefaultUpdatedAt()
 		_c.mutation.SetUpdatedAt(v)
 	}
+	if _, ok := _c.mutation.GetType(); !ok {
+		v := award.DefaultType
+		_c.mutation.SetType(v)
+	}
 	if _, ok := _c.mutation.DisplayOrder(); !ok {
 		v := award.DefaultDisplayOrder
 		_c.mutation.SetDisplayOrder(v)
@@ -249,6 +267,14 @@ func (_c *AwardCreate) check() error {
 	if v, ok := _c.mutation.Category(); ok {
 		if err := award.CategoryValidator(v); err != nil {
 			return &ValidationError{Name: "category", err: fmt.Errorf(`ent: validator failed for field "Award.category": %w`, err)}
+		}
+	}
+	if _, ok := _c.mutation.GetType(); !ok {
+		return &ValidationError{Name: "type", err: errors.New(`ent: missing required field "Award.type"`)}
+	}
+	if v, ok := _c.mutation.GetType(); ok {
+		if err := award.TypeValidator(v); err != nil {
+			return &ValidationError{Name: "type", err: fmt.Errorf(`ent: validator failed for field "Award.type": %w`, err)}
 		}
 	}
 	if _, ok := _c.mutation.ScoreConfig(); !ok {
@@ -314,6 +340,10 @@ func (_c *AwardCreate) createSpec() (*Award, *sqlgraph.CreateSpec) {
 	if value, ok := _c.mutation.Category(); ok {
 		_spec.SetField(award.FieldCategory, field.TypeEnum, value)
 		_node.Category = value
+	}
+	if value, ok := _c.mutation.GetType(); ok {
+		_spec.SetField(award.FieldType, field.TypeEnum, value)
+		_node.Type = value
 	}
 	if value, ok := _c.mutation.ScoreConfig(); ok {
 		_spec.SetField(award.FieldScoreConfig, field.TypeJSON, value)

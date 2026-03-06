@@ -18,10 +18,19 @@ import (
 	"github.com/inscripoem/bta-voting-system/backend/internal/service"
 )
 
+func parseAwardType(t string) (entaward.Type, error) {
+	parsed := entaward.Type(t)
+	if err := entaward.TypeValidator(parsed); err != nil {
+		return "", err
+	}
+	return parsed, nil
+}
+
 type awardAdminResponse struct {
 	ID           string             `json:"id"`
 	Name         string             `json:"name"`
 	Category     string             `json:"category"`
+	Type         string             `json:"type"`
 	ScoreConfig  schema.ScoreConfig `json:"score_config"`
 	DisplayOrder int                `json:"display_order"`
 	SessionID    string             `json:"session_id"`
@@ -33,6 +42,7 @@ type createAwardRequest struct {
 	SessionID    string              `json:"session_id"`
 	Name         string              `json:"name"`
 	Category     string              `json:"category"`
+	Type         *string             `json:"type"`
 	ScoreConfig  *schema.ScoreConfig `json:"score_config"`
 	DisplayOrder *int                `json:"display_order"`
 	SchoolID     *string             `json:"school_id"`
@@ -42,6 +52,7 @@ type updateAwardRequest struct {
 	SessionID    *string             `json:"session_id"`
 	Name         *string             `json:"name"`
 	Category     *string             `json:"category"`
+	Type         *string             `json:"type"`
 	ScoreConfig  *schema.ScoreConfig `json:"score_config"`
 	DisplayOrder *int                `json:"display_order"`
 	SchoolID     *string             `json:"school_id"`
@@ -71,6 +82,7 @@ func awardToAdminResponse(a *ent.Award, nomineeCount int) awardAdminResponse {
 		ID:           a.ID.String(),
 		Name:         a.Name,
 		Category:     string(a.Category),
+		Type:         string(a.Type),
 		ScoreConfig:  a.ScoreConfig,
 		DisplayOrder: a.DisplayOrder,
 		SessionID:    sessionID,
@@ -216,10 +228,20 @@ func (h *AdminHandler) CreateAward(c echo.Context) error {
 		}
 	}
 
+	awardType := entaward.TypeOther
+	if req.Type != nil && *req.Type != "" {
+		parsed, err := parseAwardType(*req.Type)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "invalid award type")
+		}
+		awardType = parsed
+	}
+
 	create := h.db.Award.Create().
 		SetSessionID(sessionID).
 		SetName(req.Name).
 		SetCategory(category).
+		SetType(awardType).
 		SetScoreConfig(*req.ScoreConfig)
 	if req.DisplayOrder != nil {
 		create.SetDisplayOrder(*req.DisplayOrder)
@@ -291,6 +313,13 @@ func (h *AdminHandler) UpdateAward(c echo.Context) error {
 		if req.DisplayOrder != nil {
 			update.SetDisplayOrder(*req.DisplayOrder)
 		}
+		if req.Type != nil {
+			parsed, err := parseAwardType(*req.Type)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusBadRequest, "invalid type")
+			}
+			update.SetType(parsed)
+		}
 	} else {
 		if req.Name != nil {
 			update.SetName(*req.Name)
@@ -301,6 +330,13 @@ func (h *AdminHandler) UpdateAward(c echo.Context) error {
 				return echo.NewHTTPError(http.StatusBadRequest, "invalid category")
 			}
 			update.SetCategory(parsed)
+		}
+		if req.Type != nil {
+			parsed, err := parseAwardType(*req.Type)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusBadRequest, "invalid type")
+			}
+			update.SetType(parsed)
 		}
 		if req.ScoreConfig != nil {
 			update.SetScoreConfig(*req.ScoreConfig)

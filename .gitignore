@@ -23,3 +23,8 @@ uploads/
 .idea/
 .vscode/
 *.swp
+
+.npmrc
+
+frontend/error.log
+frontend/package-lock.json

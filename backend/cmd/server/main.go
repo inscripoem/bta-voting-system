@@ -81,9 +81,10 @@ func main() {
 	}))
 	e.Use(echomw.Recover())
 	e.Use(echomw.CORSWithConfig(echomw.CORSConfig{
-		AllowOrigins: []string{cfg.FrontendURL},
-		AllowHeaders: []string{echo.HeaderAuthorization, echo.HeaderContentType},
-		AllowMethods: []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
+		AllowOrigins:     []string{cfg.FrontendURL},
+		AllowHeaders:     []string{echo.HeaderAuthorization, echo.HeaderContentType},
+		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
+		AllowCredentials: true,
 	}))
 
 	v1 := e.Group("/api/v1")

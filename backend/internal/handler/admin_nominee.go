@@ -16,28 +16,40 @@ import (
 )
 
 type nomineeAdminResponse struct {
-	ID            string  `json:"id"`
-	Name          string  `json:"name"`
-	CoverImageKey string  `json:"cover_image_key"`
-	CoverImageURL *string `json:"cover_image_url"`
-	Description   string  `json:"description"`
-	DisplayOrder  int     `json:"display_order"`
-	AwardID       string  `json:"award_id"`
+	ID               string  `json:"id"`
+	Name             string  `json:"name"`
+	CoverImageKey    string  `json:"cover_image_key"`
+	CoverImageURL    *string `json:"cover_image_url"`
+	Description      string  `json:"description"`
+	DisplayOrder     int     `json:"display_order"`
+	AwardID          string  `json:"award_id"`
+	BangumiID        string  `json:"bangumi_id"`
+	RelatedBangumiID string  `json:"related_bangumi_id"`
+	RelatedName      string `json:"related_name"`
+	RelatedImageURL  string `json:"related_image_url"`
 }
 
 type createNomineeRequest struct {
-	AwardID       string  `json:"award_id"`
-	Name          string  `json:"name"`
-	CoverImageKey *string `json:"cover_image_key"`
-	Description   *string `json:"description"`
-	DisplayOrder  *int    `json:"display_order"`
+	AwardID          string  `json:"award_id"`
+	Name             string  `json:"name"`
+	CoverImageKey    *string `json:"cover_image_key"`
+	Description      *string `json:"description"`
+	DisplayOrder     *int    `json:"display_order"`
+	BangumiID        *string `json:"bangumi_id"`
+	RelatedBangumiID *string `json:"related_bangumi_id"`
+	RelatedName      *string `json:"related_name"`
+	RelatedImageURL  *string `json:"related_image_url"`
 }
 
 type updateNomineeRequest struct {
-	Name          *string `json:"name"`
-	CoverImageKey *string `json:"cover_image_key"`
-	Description   *string `json:"description"`
-	DisplayOrder  *int    `json:"display_order"`
+	Name             *string `json:"name"`
+	CoverImageKey    *string `json:"cover_image_key"`
+	Description      *string `json:"description"`
+	DisplayOrder     *int    `json:"display_order"`
+	BangumiID        *string `json:"bangumi_id"`
+	RelatedBangumiID *string `json:"related_bangumi_id"`
+	RelatedName      *string `json:"related_name"`
+	RelatedImageURL  *string `json:"related_image_url"`
 }
 
 func invalidCoverImageKey(key string) bool {
@@ -103,13 +115,17 @@ func (h *AdminHandler) ListNominees(c echo.Context) error {
 	out := make([]nomineeAdminResponse, 0, len(nominees))
 	for _, n := range nominees {
 		out = append(out, nomineeAdminResponse{
-			ID:            n.ID.String(),
-			Name:          n.Name,
-			CoverImageKey: n.CoverImageKey,
-			CoverImageURL: buildCoverURL(h.cfg, n.CoverImageKey),
-			Description:   n.Description,
-			DisplayOrder:  n.DisplayOrder,
-			AwardID:       awardID.String(),
+			ID:               n.ID.String(),
+			Name:             n.Name,
+			CoverImageKey:    n.CoverImageKey,
+			CoverImageURL:    buildCoverURL(h.cfg, n.CoverImageKey),
+			Description:      n.Description,
+			DisplayOrder:     n.DisplayOrder,
+			AwardID:          awardID.String(),
+			BangumiID:        n.BangumiID,
+			RelatedBangumiID: n.RelatedBangumiID,
+			RelatedName:      n.RelatedName,
+			RelatedImageURL:  n.RelatedImageURL,
 		})
 	}
 
@@ -170,6 +186,18 @@ func (h *AdminHandler) CreateNominee(c echo.Context) error {
 	}
 	if req.DisplayOrder != nil {
 		create.SetDisplayOrder(*req.DisplayOrder)
+	}
+	if req.BangumiID != nil {
+		create.SetBangumiID(*req.BangumiID)
+	}
+	if req.RelatedBangumiID != nil {
+		create.SetRelatedBangumiID(*req.RelatedBangumiID)
+	}
+	if req.RelatedName != nil {
+		create.SetRelatedName(*req.RelatedName)
+	}
+	if req.RelatedImageURL != nil {
+		create.SetRelatedImageURL(*req.RelatedImageURL)
 	}
 
 	nominee, err := create.Save(ctx)
@@ -234,6 +262,18 @@ func (h *AdminHandler) UpdateNominee(c echo.Context) error {
 	if req.DisplayOrder != nil {
 		update.SetDisplayOrder(*req.DisplayOrder)
 	}
+	if req.BangumiID != nil {
+		update.SetBangumiID(*req.BangumiID)
+	}
+	if req.RelatedBangumiID != nil {
+		update.SetRelatedBangumiID(*req.RelatedBangumiID)
+	}
+	if req.RelatedName != nil {
+		update.SetRelatedName(*req.RelatedName)
+	}
+	if req.RelatedImageURL != nil {
+		update.SetRelatedImageURL(*req.RelatedImageURL)
+	}
 
 	updated, err := update.Save(ctx)
 	if err != nil {
@@ -248,13 +288,17 @@ func (h *AdminHandler) UpdateNominee(c echo.Context) error {
 
 	awardID := nominee.Edges.Award.ID
 	resp := nomineeAdminResponse{
-		ID:            updated.ID.String(),
-		Name:          updated.Name,
-		CoverImageKey: updated.CoverImageKey,
-		CoverImageURL: buildCoverURL(h.cfg, updated.CoverImageKey),
-		Description:   updated.Description,
-		DisplayOrder:  updated.DisplayOrder,
-		AwardID:       awardID.String(),
+		ID:               updated.ID.String(),
+		Name:             updated.Name,
+		CoverImageKey:    updated.CoverImageKey,
+		CoverImageURL:    buildCoverURL(h.cfg, updated.CoverImageKey),
+		Description:      updated.Description,
+		DisplayOrder:     updated.DisplayOrder,
+		AwardID:          awardID.String(),
+		BangumiID:        updated.BangumiID,
+		RelatedBangumiID: updated.RelatedBangumiID,
+		RelatedName:      updated.RelatedName,
+		RelatedImageURL:  updated.RelatedImageURL,
 	}
 
 	return c.JSON(http.StatusOK, resp)

@@ -26,6 +26,8 @@ const (
 	FieldDescription = "description"
 	// FieldCategory holds the string denoting the category field in the database.
 	FieldCategory = "category"
+	// FieldType holds the string denoting the type field in the database.
+	FieldType = "type"
 	// FieldScoreConfig holds the string denoting the score_config field in the database.
 	FieldScoreConfig = "score_config"
 	// FieldDisplayOrder holds the string denoting the display_order field in the database.
@@ -78,6 +80,7 @@ var Columns = []string{
 	FieldName,
 	FieldDescription,
 	FieldCategory,
+	FieldType,
 	FieldScoreConfig,
 	FieldDisplayOrder,
 }
@@ -143,6 +146,35 @@ func CategoryValidator(c Category) error {
 	}
 }
 
+// Type defines the type for the "type" enum field.
+type Type string
+
+// TypeOther is the default value of the Type enum.
+const DefaultType = TypeOther
+
+// Type values.
+const (
+	TypeAnime     Type = "anime"
+	TypeCharacter Type = "character"
+	TypeStaff     Type = "staff"
+	TypeSeiyuu    Type = "seiyuu"
+	TypeOther     Type = "other"
+)
+
+func (_type Type) String() string {
+	return string(_type)
+}
+
+// TypeValidator is a validator for the "type" field enum values. It is called by the builders before save.
+func TypeValidator(_type Type) error {
+	switch _type {
+	case TypeAnime, TypeCharacter, TypeStaff, TypeSeiyuu, TypeOther:
+		return nil
+	default:
+		return fmt.Errorf("award: invalid enum value for type field: %q", _type)
+	}
+}
+
 // OrderOption defines the ordering options for the Award queries.
 type OrderOption func(*sql.Selector)
 
@@ -174,6 +206,11 @@ func ByDescription(opts ...sql.OrderTermOption) OrderOption {
 // ByCategory orders the results by the category field.
 func ByCategory(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldCategory, opts...).ToFunc()
+}
+
+// ByType orders the results by the type field.
+func ByType(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldType, opts...).ToFunc()
 }
 
 // ByDisplayOrder orders the results by the display_order field.

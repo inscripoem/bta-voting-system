@@ -321,6 +321,26 @@ func CategoryNotIn(vs ...Category) predicate.Award {
 	return predicate.Award(sql.FieldNotIn(FieldCategory, vs...))
 }
 
+// TypeEQ applies the EQ predicate on the "type" field.
+func TypeEQ(v Type) predicate.Award {
+	return predicate.Award(sql.FieldEQ(FieldType, v))
+}
+
+// TypeNEQ applies the NEQ predicate on the "type" field.
+func TypeNEQ(v Type) predicate.Award {
+	return predicate.Award(sql.FieldNEQ(FieldType, v))
+}
+
+// TypeIn applies the In predicate on the "type" field.
+func TypeIn(vs ...Type) predicate.Award {
+	return predicate.Award(sql.FieldIn(FieldType, vs...))
+}
+
+// TypeNotIn applies the NotIn predicate on the "type" field.
+func TypeNotIn(vs ...Type) predicate.Award {
+	return predicate.Award(sql.FieldNotIn(FieldType, vs...))
+}
+
 // DisplayOrderEQ applies the EQ predicate on the "display_order" field.
 func DisplayOrderEQ(v int) predicate.Award {
 	return predicate.Award(sql.FieldEQ(FieldDisplayOrder, v))

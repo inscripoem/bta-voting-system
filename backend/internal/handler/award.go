@@ -78,18 +78,22 @@ func (h *AwardHandler) List(c echo.Context) error {
 	}
 
 	type nomineeResp struct {
-		ID            string  `json:"id"`
-		Name          string  `json:"name"`
-		CoverImageKey string  `json:"cover_image_key,omitempty"`
-		CoverImageURL *string `json:"cover_image_url,omitempty"`
-		Description   string  `json:"description,omitempty"`
-		DisplayOrder  int     `json:"display_order"`
+		ID               string  `json:"id"`
+		Name             string  `json:"name"`
+		CoverImageKey    string  `json:"cover_image_key,omitempty"`
+		CoverImageURL    *string `json:"cover_image_url,omitempty"`
+		Description      string  `json:"description,omitempty"`
+		DisplayOrder     int     `json:"display_order"`
+		RelatedBangumiID string  `json:"related_bangumi_id,omitempty"`
+		RelatedName      string `json:"related_name,omitempty"`
+		RelatedImageURL  string `json:"related_image_url,omitempty"`
 	}
 	type awardResp struct {
 		ID           string        `json:"id"`
 		Name         string        `json:"name"`
 		Description  string        `json:"description,omitempty"`
 		Category     string        `json:"category"`
+		Type         string        `json:"type"`
 		ScoreConfig  interface{}   `json:"score_config"`
 		DisplayOrder int           `json:"display_order"`
 		SchoolID     *string       `json:"school_id,omitempty"`
@@ -101,12 +105,15 @@ func (h *AwardHandler) List(c echo.Context) error {
 		nominees := make([]nomineeResp, 0, len(a.Edges.Nominees))
 		for _, n := range a.Edges.Nominees {
 			nominees = append(nominees, nomineeResp{
-				ID:            n.ID.String(),
-				Name:          n.Name,
-				CoverImageKey: n.CoverImageKey,
-				CoverImageURL: buildCoverURL(h.cfg, n.CoverImageKey),
-				Description:   n.Description,
-				DisplayOrder:  n.DisplayOrder,
+				ID:               n.ID.String(),
+				Name:             n.Name,
+				CoverImageKey:    n.CoverImageKey,
+				CoverImageURL:    buildCoverURL(h.cfg, n.CoverImageKey),
+				Description:      n.Description,
+				DisplayOrder:     n.DisplayOrder,
+				RelatedBangumiID: n.RelatedBangumiID,
+				RelatedName:      n.RelatedName,
+				RelatedImageURL:  n.RelatedImageURL,
 			})
 		}
 		ar := awardResp{
@@ -114,6 +121,7 @@ func (h *AwardHandler) List(c echo.Context) error {
 			Name:         a.Name,
 			Description:  a.Description,
 			Category:     string(a.Category),
+			Type:         string(a.Type),
 			ScoreConfig:  a.ScoreConfig,
 			DisplayOrder: a.DisplayOrder,
 			Nominees:     nominees,

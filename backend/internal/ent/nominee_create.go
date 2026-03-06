@@ -99,6 +99,62 @@ func (_c *NomineeCreate) SetNillableDisplayOrder(v *int) *NomineeCreate {
 	return _c
 }
 
+// SetBangumiID sets the "bangumi_id" field.
+func (_c *NomineeCreate) SetBangumiID(v string) *NomineeCreate {
+	_c.mutation.SetBangumiID(v)
+	return _c
+}
+
+// SetNillableBangumiID sets the "bangumi_id" field if the given value is not nil.
+func (_c *NomineeCreate) SetNillableBangumiID(v *string) *NomineeCreate {
+	if v != nil {
+		_c.SetBangumiID(*v)
+	}
+	return _c
+}
+
+// SetRelatedBangumiID sets the "related_bangumi_id" field.
+func (_c *NomineeCreate) SetRelatedBangumiID(v string) *NomineeCreate {
+	_c.mutation.SetRelatedBangumiID(v)
+	return _c
+}
+
+// SetNillableRelatedBangumiID sets the "related_bangumi_id" field if the given value is not nil.
+func (_c *NomineeCreate) SetNillableRelatedBangumiID(v *string) *NomineeCreate {
+	if v != nil {
+		_c.SetRelatedBangumiID(*v)
+	}
+	return _c
+}
+
+// SetRelatedName sets the "related_name" field.
+func (_c *NomineeCreate) SetRelatedName(v string) *NomineeCreate {
+	_c.mutation.SetRelatedName(v)
+	return _c
+}
+
+// SetNillableRelatedName sets the "related_name" field if the given value is not nil.
+func (_c *NomineeCreate) SetNillableRelatedName(v *string) *NomineeCreate {
+	if v != nil {
+		_c.SetRelatedName(*v)
+	}
+	return _c
+}
+
+// SetRelatedImageURL sets the "related_image_url" field.
+func (_c *NomineeCreate) SetRelatedImageURL(v string) *NomineeCreate {
+	_c.mutation.SetRelatedImageURL(v)
+	return _c
+}
+
+// SetNillableRelatedImageURL sets the "related_image_url" field if the given value is not nil.
+func (_c *NomineeCreate) SetNillableRelatedImageURL(v *string) *NomineeCreate {
+	if v != nil {
+		_c.SetRelatedImageURL(*v)
+	}
+	return _c
+}
+
 // SetID sets the "id" field.
 func (_c *NomineeCreate) SetID(v uuid.UUID) *NomineeCreate {
 	_c.mutation.SetID(v)
@@ -272,6 +328,22 @@ func (_c *NomineeCreate) createSpec() (*Nominee, *sqlgraph.CreateSpec) {
 	if value, ok := _c.mutation.DisplayOrder(); ok {
 		_spec.SetField(nominee.FieldDisplayOrder, field.TypeInt, value)
 		_node.DisplayOrder = value
+	}
+	if value, ok := _c.mutation.BangumiID(); ok {
+		_spec.SetField(nominee.FieldBangumiID, field.TypeString, value)
+		_node.BangumiID = value
+	}
+	if value, ok := _c.mutation.RelatedBangumiID(); ok {
+		_spec.SetField(nominee.FieldRelatedBangumiID, field.TypeString, value)
+		_node.RelatedBangumiID = value
+	}
+	if value, ok := _c.mutation.RelatedName(); ok {
+		_spec.SetField(nominee.FieldRelatedName, field.TypeString, value)
+		_node.RelatedName = value
+	}
+	if value, ok := _c.mutation.RelatedImageURL(); ok {
+		_spec.SetField(nominee.FieldRelatedImageURL, field.TypeString, value)
+		_node.RelatedImageURL = value
 	}
 	if nodes := _c.mutation.AwardIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{

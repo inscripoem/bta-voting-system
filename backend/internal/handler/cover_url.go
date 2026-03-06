@@ -12,6 +12,10 @@ func buildCoverURL(cfg *config.Config, key string) *string {
 		return nil
 	}
 
+	if strings.HasPrefix(key, "http://") || strings.HasPrefix(key, "https://") {
+		return &key
+	}
+
 	cleaned := filepath.Clean(key)
 	if strings.Contains(cleaned, "..") {
 		return nil

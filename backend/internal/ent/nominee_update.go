@@ -112,6 +112,86 @@ func (_u *NomineeUpdate) AddDisplayOrder(v int) *NomineeUpdate {
 	return _u
 }
 
+// SetBangumiID sets the "bangumi_id" field.
+func (_u *NomineeUpdate) SetBangumiID(v string) *NomineeUpdate {
+	_u.mutation.SetBangumiID(v)
+	return _u
+}
+
+// SetNillableBangumiID sets the "bangumi_id" field if the given value is not nil.
+func (_u *NomineeUpdate) SetNillableBangumiID(v *string) *NomineeUpdate {
+	if v != nil {
+		_u.SetBangumiID(*v)
+	}
+	return _u
+}
+
+// ClearBangumiID clears the value of the "bangumi_id" field.
+func (_u *NomineeUpdate) ClearBangumiID() *NomineeUpdate {
+	_u.mutation.ClearBangumiID()
+	return _u
+}
+
+// SetRelatedBangumiID sets the "related_bangumi_id" field.
+func (_u *NomineeUpdate) SetRelatedBangumiID(v string) *NomineeUpdate {
+	_u.mutation.SetRelatedBangumiID(v)
+	return _u
+}
+
+// SetNillableRelatedBangumiID sets the "related_bangumi_id" field if the given value is not nil.
+func (_u *NomineeUpdate) SetNillableRelatedBangumiID(v *string) *NomineeUpdate {
+	if v != nil {
+		_u.SetRelatedBangumiID(*v)
+	}
+	return _u
+}
+
+// ClearRelatedBangumiID clears the value of the "related_bangumi_id" field.
+func (_u *NomineeUpdate) ClearRelatedBangumiID() *NomineeUpdate {
+	_u.mutation.ClearRelatedBangumiID()
+	return _u
+}
+
+// SetRelatedName sets the "related_name" field.
+func (_u *NomineeUpdate) SetRelatedName(v string) *NomineeUpdate {
+	_u.mutation.SetRelatedName(v)
+	return _u
+}
+
+// SetNillableRelatedName sets the "related_name" field if the given value is not nil.
+func (_u *NomineeUpdate) SetNillableRelatedName(v *string) *NomineeUpdate {
+	if v != nil {
+		_u.SetRelatedName(*v)
+	}
+	return _u
+}
+
+// ClearRelatedName clears the value of the "related_name" field.
+func (_u *NomineeUpdate) ClearRelatedName() *NomineeUpdate {
+	_u.mutation.ClearRelatedName()
+	return _u
+}
+
+// SetRelatedImageURL sets the "related_image_url" field.
+func (_u *NomineeUpdate) SetRelatedImageURL(v string) *NomineeUpdate {
+	_u.mutation.SetRelatedImageURL(v)
+	return _u
+}
+
+// SetNillableRelatedImageURL sets the "related_image_url" field if the given value is not nil.
+func (_u *NomineeUpdate) SetNillableRelatedImageURL(v *string) *NomineeUpdate {
+	if v != nil {
+		_u.SetRelatedImageURL(*v)
+	}
+	return _u
+}
+
+// ClearRelatedImageURL clears the value of the "related_image_url" field.
+func (_u *NomineeUpdate) ClearRelatedImageURL() *NomineeUpdate {
+	_u.mutation.ClearRelatedImageURL()
+	return _u
+}
+
 // SetAwardID sets the "award" edge to the Award entity by ID.
 func (_u *NomineeUpdate) SetAwardID(id uuid.UUID) *NomineeUpdate {
 	_u.mutation.SetAwardID(id)
@@ -254,6 +334,30 @@ func (_u *NomineeUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	}
 	if value, ok := _u.mutation.AddedDisplayOrder(); ok {
 		_spec.AddField(nominee.FieldDisplayOrder, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.BangumiID(); ok {
+		_spec.SetField(nominee.FieldBangumiID, field.TypeString, value)
+	}
+	if _u.mutation.BangumiIDCleared() {
+		_spec.ClearField(nominee.FieldBangumiID, field.TypeString)
+	}
+	if value, ok := _u.mutation.RelatedBangumiID(); ok {
+		_spec.SetField(nominee.FieldRelatedBangumiID, field.TypeString, value)
+	}
+	if _u.mutation.RelatedBangumiIDCleared() {
+		_spec.ClearField(nominee.FieldRelatedBangumiID, field.TypeString)
+	}
+	if value, ok := _u.mutation.RelatedName(); ok {
+		_spec.SetField(nominee.FieldRelatedName, field.TypeString, value)
+	}
+	if _u.mutation.RelatedNameCleared() {
+		_spec.ClearField(nominee.FieldRelatedName, field.TypeString)
+	}
+	if value, ok := _u.mutation.RelatedImageURL(); ok {
+		_spec.SetField(nominee.FieldRelatedImageURL, field.TypeString, value)
+	}
+	if _u.mutation.RelatedImageURLCleared() {
+		_spec.ClearField(nominee.FieldRelatedImageURL, field.TypeString)
 	}
 	if _u.mutation.AwardCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -430,6 +534,86 @@ func (_u *NomineeUpdateOne) AddDisplayOrder(v int) *NomineeUpdateOne {
 	return _u
 }
 
+// SetBangumiID sets the "bangumi_id" field.
+func (_u *NomineeUpdateOne) SetBangumiID(v string) *NomineeUpdateOne {
+	_u.mutation.SetBangumiID(v)
+	return _u
+}
+
+// SetNillableBangumiID sets the "bangumi_id" field if the given value is not nil.
+func (_u *NomineeUpdateOne) SetNillableBangumiID(v *string) *NomineeUpdateOne {
+	if v != nil {
+		_u.SetBangumiID(*v)
+	}
+	return _u
+}
+
+// ClearBangumiID clears the value of the "bangumi_id" field.
+func (_u *NomineeUpdateOne) ClearBangumiID() *NomineeUpdateOne {
+	_u.mutation.ClearBangumiID()
+	return _u
+}
+
+// SetRelatedBangumiID sets the "related_bangumi_id" field.
+func (_u *NomineeUpdateOne) SetRelatedBangumiID(v string) *NomineeUpdateOne {
+	_u.mutation.SetRelatedBangumiID(v)
+	return _u
+}
+
+// SetNillableRelatedBangumiID sets the "related_bangumi_id" field if the given value is not nil.
+func (_u *NomineeUpdateOne) SetNillableRelatedBangumiID(v *string) *NomineeUpdateOne {
+	if v != nil {
+		_u.SetRelatedBangumiID(*v)
+	}
+	return _u
+}
+
+// ClearRelatedBangumiID clears the value of the "related_bangumi_id" field.
+func (_u *NomineeUpdateOne) ClearRelatedBangumiID() *NomineeUpdateOne {
+	_u.mutation.ClearRelatedBangumiID()
+	return _u
+}
+
+// SetRelatedName sets the "related_name" field.
+func (_u *NomineeUpdateOne) SetRelatedName(v string) *NomineeUpdateOne {
+	_u.mutation.SetRelatedName(v)
+	return _u
+}
+
+// SetNillableRelatedName sets the "related_name" field if the given value is not nil.
+func (_u *NomineeUpdateOne) SetNillableRelatedName(v *string) *NomineeUpdateOne {
+	if v != nil {
+		_u.SetRelatedName(*v)
+	}
+	return _u
+}
+
+// ClearRelatedName clears the value of the "related_name" field.
+func (_u *NomineeUpdateOne) ClearRelatedName() *NomineeUpdateOne {
+	_u.mutation.ClearRelatedName()
+	return _u
+}
+
+// SetRelatedImageURL sets the "related_image_url" field.
+func (_u *NomineeUpdateOne) SetRelatedImageURL(v string) *NomineeUpdateOne {
+	_u.mutation.SetRelatedImageURL(v)
+	return _u
+}
+
+// SetNillableRelatedImageURL sets the "related_image_url" field if the given value is not nil.
+func (_u *NomineeUpdateOne) SetNillableRelatedImageURL(v *string) *NomineeUpdateOne {
+	if v != nil {
+		_u.SetRelatedImageURL(*v)
+	}
+	return _u
+}
+
+// ClearRelatedImageURL clears the value of the "related_image_url" field.
+func (_u *NomineeUpdateOne) ClearRelatedImageURL() *NomineeUpdateOne {
+	_u.mutation.ClearRelatedImageURL()
+	return _u
+}
+
 // SetAwardID sets the "award" edge to the Award entity by ID.
 func (_u *NomineeUpdateOne) SetAwardID(id uuid.UUID) *NomineeUpdateOne {
 	_u.mutation.SetAwardID(id)
@@ -602,6 +786,30 @@ func (_u *NomineeUpdateOne) sqlSave(ctx context.Context) (_node *Nominee, err er
 	}
 	if value, ok := _u.mutation.AddedDisplayOrder(); ok {
 		_spec.AddField(nominee.FieldDisplayOrder, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.BangumiID(); ok {
+		_spec.SetField(nominee.FieldBangumiID, field.TypeString, value)
+	}
+	if _u.mutation.BangumiIDCleared() {
+		_spec.ClearField(nominee.FieldBangumiID, field.TypeString)
+	}
+	if value, ok := _u.mutation.RelatedBangumiID(); ok {
+		_spec.SetField(nominee.FieldRelatedBangumiID, field.TypeString, value)
+	}
+	if _u.mutation.RelatedBangumiIDCleared() {
+		_spec.ClearField(nominee.FieldRelatedBangumiID, field.TypeString)
+	}
+	if value, ok := _u.mutation.RelatedName(); ok {
+		_spec.SetField(nominee.FieldRelatedName, field.TypeString, value)
+	}
+	if _u.mutation.RelatedNameCleared() {
+		_spec.ClearField(nominee.FieldRelatedName, field.TypeString)
+	}
+	if value, ok := _u.mutation.RelatedImageURL(); ok {
+		_spec.SetField(nominee.FieldRelatedImageURL, field.TypeString, value)
+	}
+	if _u.mutation.RelatedImageURLCleared() {
+		_spec.ClearField(nominee.FieldRelatedImageURL, field.TypeString)
 	}
 	if _u.mutation.AwardCleared() {
 		edge := &sqlgraph.EdgeSpec{

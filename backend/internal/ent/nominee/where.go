@@ -86,6 +86,26 @@ func DisplayOrder(v int) predicate.Nominee {
 	return predicate.Nominee(sql.FieldEQ(FieldDisplayOrder, v))
 }
 
+// BangumiID applies equality check predicate on the "bangumi_id" field. It's identical to BangumiIDEQ.
+func BangumiID(v string) predicate.Nominee {
+	return predicate.Nominee(sql.FieldEQ(FieldBangumiID, v))
+}
+
+// RelatedBangumiID applies equality check predicate on the "related_bangumi_id" field. It's identical to RelatedBangumiIDEQ.
+func RelatedBangumiID(v string) predicate.Nominee {
+	return predicate.Nominee(sql.FieldEQ(FieldRelatedBangumiID, v))
+}
+
+// RelatedName applies equality check predicate on the "related_name" field. It's identical to RelatedNameEQ.
+func RelatedName(v string) predicate.Nominee {
+	return predicate.Nominee(sql.FieldEQ(FieldRelatedName, v))
+}
+
+// RelatedImageURL applies equality check predicate on the "related_image_url" field. It's identical to RelatedImageURLEQ.
+func RelatedImageURL(v string) predicate.Nominee {
+	return predicate.Nominee(sql.FieldEQ(FieldRelatedImageURL, v))
+}
+
 // CreatedAtEQ applies the EQ predicate on the "created_at" field.
 func CreatedAtEQ(v time.Time) predicate.Nominee {
 	return predicate.Nominee(sql.FieldEQ(FieldCreatedAt, v))
@@ -419,6 +439,306 @@ func DisplayOrderLT(v int) predicate.Nominee {
 // DisplayOrderLTE applies the LTE predicate on the "display_order" field.
 func DisplayOrderLTE(v int) predicate.Nominee {
 	return predicate.Nominee(sql.FieldLTE(FieldDisplayOrder, v))
+}
+
+// BangumiIDEQ applies the EQ predicate on the "bangumi_id" field.
+func BangumiIDEQ(v string) predicate.Nominee {
+	return predicate.Nominee(sql.FieldEQ(FieldBangumiID, v))
+}
+
+// BangumiIDNEQ applies the NEQ predicate on the "bangumi_id" field.
+func BangumiIDNEQ(v string) predicate.Nominee {
+	return predicate.Nominee(sql.FieldNEQ(FieldBangumiID, v))
+}
+
+// BangumiIDIn applies the In predicate on the "bangumi_id" field.
+func BangumiIDIn(vs ...string) predicate.Nominee {
+	return predicate.Nominee(sql.FieldIn(FieldBangumiID, vs...))
+}
+
+// BangumiIDNotIn applies the NotIn predicate on the "bangumi_id" field.
+func BangumiIDNotIn(vs ...string) predicate.Nominee {
+	return predicate.Nominee(sql.FieldNotIn(FieldBangumiID, vs...))
+}
+
+// BangumiIDGT applies the GT predicate on the "bangumi_id" field.
+func BangumiIDGT(v string) predicate.Nominee {
+	return predicate.Nominee(sql.FieldGT(FieldBangumiID, v))
+}
+
+// BangumiIDGTE applies the GTE predicate on the "bangumi_id" field.
+func BangumiIDGTE(v string) predicate.Nominee {
+	return predicate.Nominee(sql.FieldGTE(FieldBangumiID, v))
+}
+
+// BangumiIDLT applies the LT predicate on the "bangumi_id" field.
+func BangumiIDLT(v string) predicate.Nominee {
+	return predicate.Nominee(sql.FieldLT(FieldBangumiID, v))
+}
+
+// BangumiIDLTE applies the LTE predicate on the "bangumi_id" field.
+func BangumiIDLTE(v string) predicate.Nominee {
+	return predicate.Nominee(sql.FieldLTE(FieldBangumiID, v))
+}
+
+// BangumiIDContains applies the Contains predicate on the "bangumi_id" field.
+func BangumiIDContains(v string) predicate.Nominee {
+	return predicate.Nominee(sql.FieldContains(FieldBangumiID, v))
+}
+
+// BangumiIDHasPrefix applies the HasPrefix predicate on the "bangumi_id" field.
+func BangumiIDHasPrefix(v string) predicate.Nominee {
+	return predicate.Nominee(sql.FieldHasPrefix(FieldBangumiID, v))
+}
+
+// BangumiIDHasSuffix applies the HasSuffix predicate on the "bangumi_id" field.
+func BangumiIDHasSuffix(v string) predicate.Nominee {
+	return predicate.Nominee(sql.FieldHasSuffix(FieldBangumiID, v))
+}
+
+// BangumiIDIsNil applies the IsNil predicate on the "bangumi_id" field.
+func BangumiIDIsNil() predicate.Nominee {
+	return predicate.Nominee(sql.FieldIsNull(FieldBangumiID))
+}
+
+// BangumiIDNotNil applies the NotNil predicate on the "bangumi_id" field.
+func BangumiIDNotNil() predicate.Nominee {
+	return predicate.Nominee(sql.FieldNotNull(FieldBangumiID))
+}
+
+// BangumiIDEqualFold applies the EqualFold predicate on the "bangumi_id" field.
+func BangumiIDEqualFold(v string) predicate.Nominee {
+	return predicate.Nominee(sql.FieldEqualFold(FieldBangumiID, v))
+}
+
+// BangumiIDContainsFold applies the ContainsFold predicate on the "bangumi_id" field.
+func BangumiIDContainsFold(v string) predicate.Nominee {
+	return predicate.Nominee(sql.FieldContainsFold(FieldBangumiID, v))
+}
+
+// RelatedBangumiIDEQ applies the EQ predicate on the "related_bangumi_id" field.
+func RelatedBangumiIDEQ(v string) predicate.Nominee {
+	return predicate.Nominee(sql.FieldEQ(FieldRelatedBangumiID, v))
+}
+
+// RelatedBangumiIDNEQ applies the NEQ predicate on the "related_bangumi_id" field.
+func RelatedBangumiIDNEQ(v string) predicate.Nominee {
+	return predicate.Nominee(sql.FieldNEQ(FieldRelatedBangumiID, v))
+}
+
+// RelatedBangumiIDIn applies the In predicate on the "related_bangumi_id" field.
+func RelatedBangumiIDIn(vs ...string) predicate.Nominee {
+	return predicate.Nominee(sql.FieldIn(FieldRelatedBangumiID, vs...))
+}
+
+// RelatedBangumiIDNotIn applies the NotIn predicate on the "related_bangumi_id" field.
+func RelatedBangumiIDNotIn(vs ...string) predicate.Nominee {
+	return predicate.Nominee(sql.FieldNotIn(FieldRelatedBangumiID, vs...))
+}
+
+// RelatedBangumiIDGT applies the GT predicate on the "related_bangumi_id" field.
+func RelatedBangumiIDGT(v string) predicate.Nominee {
+	return predicate.Nominee(sql.FieldGT(FieldRelatedBangumiID, v))
+}
+
+// RelatedBangumiIDGTE applies the GTE predicate on the "related_bangumi_id" field.
+func RelatedBangumiIDGTE(v string) predicate.Nominee {
+	return predicate.Nominee(sql.FieldGTE(FieldRelatedBangumiID, v))
+}
+
+// RelatedBangumiIDLT applies the LT predicate on the "related_bangumi_id" field.
+func RelatedBangumiIDLT(v string) predicate.Nominee {
+	return predicate.Nominee(sql.FieldLT(FieldRelatedBangumiID, v))
+}
+
+// RelatedBangumiIDLTE applies the LTE predicate on the "related_bangumi_id" field.
+func RelatedBangumiIDLTE(v string) predicate.Nominee {
+	return predicate.Nominee(sql.FieldLTE(FieldRelatedBangumiID, v))
+}
+
+// RelatedBangumiIDContains applies the Contains predicate on the "related_bangumi_id" field.
+func RelatedBangumiIDContains(v string) predicate.Nominee {
+	return predicate.Nominee(sql.FieldContains(FieldRelatedBangumiID, v))
+}
+
+// RelatedBangumiIDHasPrefix applies the HasPrefix predicate on the "related_bangumi_id" field.
+func RelatedBangumiIDHasPrefix(v string) predicate.Nominee {
+	return predicate.Nominee(sql.FieldHasPrefix(FieldRelatedBangumiID, v))
+}
+
+// RelatedBangumiIDHasSuffix applies the HasSuffix predicate on the "related_bangumi_id" field.
+func RelatedBangumiIDHasSuffix(v string) predicate.Nominee {
+	return predicate.Nominee(sql.FieldHasSuffix(FieldRelatedBangumiID, v))
+}
+
+// RelatedBangumiIDIsNil applies the IsNil predicate on the "related_bangumi_id" field.
+func RelatedBangumiIDIsNil() predicate.Nominee {
+	return predicate.Nominee(sql.FieldIsNull(FieldRelatedBangumiID))
+}
+
+// RelatedBangumiIDNotNil applies the NotNil predicate on the "related_bangumi_id" field.
+func RelatedBangumiIDNotNil() predicate.Nominee {
+	return predicate.Nominee(sql.FieldNotNull(FieldRelatedBangumiID))
+}
+
+// RelatedBangumiIDEqualFold applies the EqualFold predicate on the "related_bangumi_id" field.
+func RelatedBangumiIDEqualFold(v string) predicate.Nominee {
+	return predicate.Nominee(sql.FieldEqualFold(FieldRelatedBangumiID, v))
+}
+
+// RelatedBangumiIDContainsFold applies the ContainsFold predicate on the "related_bangumi_id" field.
+func RelatedBangumiIDContainsFold(v string) predicate.Nominee {
+	return predicate.Nominee(sql.FieldContainsFold(FieldRelatedBangumiID, v))
+}
+
+// RelatedNameEQ applies the EQ predicate on the "related_name" field.
+func RelatedNameEQ(v string) predicate.Nominee {
+	return predicate.Nominee(sql.FieldEQ(FieldRelatedName, v))
+}
+
+// RelatedNameNEQ applies the NEQ predicate on the "related_name" field.
+func RelatedNameNEQ(v string) predicate.Nominee {
+	return predicate.Nominee(sql.FieldNEQ(FieldRelatedName, v))
+}
+
+// RelatedNameIn applies the In predicate on the "related_name" field.
+func RelatedNameIn(vs ...string) predicate.Nominee {
+	return predicate.Nominee(sql.FieldIn(FieldRelatedName, vs...))
+}
+
+// RelatedNameNotIn applies the NotIn predicate on the "related_name" field.
+func RelatedNameNotIn(vs ...string) predicate.Nominee {
+	return predicate.Nominee(sql.FieldNotIn(FieldRelatedName, vs...))
+}
+
+// RelatedNameGT applies the GT predicate on the "related_name" field.
+func RelatedNameGT(v string) predicate.Nominee {
+	return predicate.Nominee(sql.FieldGT(FieldRelatedName, v))
+}
+
+// RelatedNameGTE applies the GTE predicate on the "related_name" field.
+func RelatedNameGTE(v string) predicate.Nominee {
+	return predicate.Nominee(sql.FieldGTE(FieldRelatedName, v))
+}
+
+// RelatedNameLT applies the LT predicate on the "related_name" field.
+func RelatedNameLT(v string) predicate.Nominee {
+	return predicate.Nominee(sql.FieldLT(FieldRelatedName, v))
+}
+
+// RelatedNameLTE applies the LTE predicate on the "related_name" field.
+func RelatedNameLTE(v string) predicate.Nominee {
+	return predicate.Nominee(sql.FieldLTE(FieldRelatedName, v))
+}
+
+// RelatedNameContains applies the Contains predicate on the "related_name" field.
+func RelatedNameContains(v string) predicate.Nominee {
+	return predicate.Nominee(sql.FieldContains(FieldRelatedName, v))
+}
+
+// RelatedNameHasPrefix applies the HasPrefix predicate on the "related_name" field.
+func RelatedNameHasPrefix(v string) predicate.Nominee {
+	return predicate.Nominee(sql.FieldHasPrefix(FieldRelatedName, v))
+}
+
+// RelatedNameHasSuffix applies the HasSuffix predicate on the "related_name" field.
+func RelatedNameHasSuffix(v string) predicate.Nominee {
+	return predicate.Nominee(sql.FieldHasSuffix(FieldRelatedName, v))
+}
+
+// RelatedNameIsNil applies the IsNil predicate on the "related_name" field.
+func RelatedNameIsNil() predicate.Nominee {
+	return predicate.Nominee(sql.FieldIsNull(FieldRelatedName))
+}
+
+// RelatedNameNotNil applies the NotNil predicate on the "related_name" field.
+func RelatedNameNotNil() predicate.Nominee {
+	return predicate.Nominee(sql.FieldNotNull(FieldRelatedName))
+}
+
+// RelatedNameEqualFold applies the EqualFold predicate on the "related_name" field.
+func RelatedNameEqualFold(v string) predicate.Nominee {
+	return predicate.Nominee(sql.FieldEqualFold(FieldRelatedName, v))
+}
+
+// RelatedNameContainsFold applies the ContainsFold predicate on the "related_name" field.
+func RelatedNameContainsFold(v string) predicate.Nominee {
+	return predicate.Nominee(sql.FieldContainsFold(FieldRelatedName, v))
+}
+
+// RelatedImageURLEQ applies the EQ predicate on the "related_image_url" field.
+func RelatedImageURLEQ(v string) predicate.Nominee {
+	return predicate.Nominee(sql.FieldEQ(FieldRelatedImageURL, v))
+}
+
+// RelatedImageURLNEQ applies the NEQ predicate on the "related_image_url" field.
+func RelatedImageURLNEQ(v string) predicate.Nominee {
+	return predicate.Nominee(sql.FieldNEQ(FieldRelatedImageURL, v))
+}
+
+// RelatedImageURLIn applies the In predicate on the "related_image_url" field.
+func RelatedImageURLIn(vs ...string) predicate.Nominee {
+	return predicate.Nominee(sql.FieldIn(FieldRelatedImageURL, vs...))
+}
+
+// RelatedImageURLNotIn applies the NotIn predicate on the "related_image_url" field.
+func RelatedImageURLNotIn(vs ...string) predicate.Nominee {
+	return predicate.Nominee(sql.FieldNotIn(FieldRelatedImageURL, vs...))
+}
+
+// RelatedImageURLGT applies the GT predicate on the "related_image_url" field.
+func RelatedImageURLGT(v string) predicate.Nominee {
+	return predicate.Nominee(sql.FieldGT(FieldRelatedImageURL, v))
+}
+
+// RelatedImageURLGTE applies the GTE predicate on the "related_image_url" field.
+func RelatedImageURLGTE(v string) predicate.Nominee {
+	return predicate.Nominee(sql.FieldGTE(FieldRelatedImageURL, v))
+}
+
+// RelatedImageURLLT applies the LT predicate on the "related_image_url" field.
+func RelatedImageURLLT(v string) predicate.Nominee {
+	return predicate.Nominee(sql.FieldLT(FieldRelatedImageURL, v))
+}
+
+// RelatedImageURLLTE applies the LTE predicate on the "related_image_url" field.
+func RelatedImageURLLTE(v string) predicate.Nominee {
+	return predicate.Nominee(sql.FieldLTE(FieldRelatedImageURL, v))
+}
+
+// RelatedImageURLContains applies the Contains predicate on the "related_image_url" field.
+func RelatedImageURLContains(v string) predicate.Nominee {
+	return predicate.Nominee(sql.FieldContains(FieldRelatedImageURL, v))
+}
+
+// RelatedImageURLHasPrefix applies the HasPrefix predicate on the "related_image_url" field.
+func RelatedImageURLHasPrefix(v string) predicate.Nominee {
+	return predicate.Nominee(sql.FieldHasPrefix(FieldRelatedImageURL, v))
+}
+
+// RelatedImageURLHasSuffix applies the HasSuffix predicate on the "related_image_url" field.
+func RelatedImageURLHasSuffix(v string) predicate.Nominee {
+	return predicate.Nominee(sql.FieldHasSuffix(FieldRelatedImageURL, v))
+}
+
+// RelatedImageURLIsNil applies the IsNil predicate on the "related_image_url" field.
+func RelatedImageURLIsNil() predicate.Nominee {
+	return predicate.Nominee(sql.FieldIsNull(FieldRelatedImageURL))
+}
+
+// RelatedImageURLNotNil applies the NotNil predicate on the "related_image_url" field.
+func RelatedImageURLNotNil() predicate.Nominee {
+	return predicate.Nominee(sql.FieldNotNull(FieldRelatedImageURL))
+}
+
+// RelatedImageURLEqualFold applies the EqualFold predicate on the "related_image_url" field.
+func RelatedImageURLEqualFold(v string) predicate.Nominee {
+	return predicate.Nominee(sql.FieldEqualFold(FieldRelatedImageURL, v))
+}
+
+// RelatedImageURLContainsFold applies the ContainsFold predicate on the "related_image_url" field.
+func RelatedImageURLContainsFold(v string) predicate.Nominee {
+	return predicate.Nominee(sql.FieldContainsFold(FieldRelatedImageURL, v))
 }
 
 // HasAward applies the HasEdge predicate on the "award" edge.

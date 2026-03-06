@@ -16,6 +16,7 @@ var (
 		{Name: "name", Type: field.TypeString},
 		{Name: "description", Type: field.TypeString, Nullable: true},
 		{Name: "category", Type: field.TypeEnum, Enums: []string{"mandatory", "optional", "entertainment"}},
+		{Name: "type", Type: field.TypeEnum, Enums: []string{"anime", "character", "staff", "seiyuu", "other"}, Default: "other"},
 		{Name: "score_config", Type: field.TypeJSON},
 		{Name: "display_order", Type: field.TypeInt, Default: 0},
 		{Name: "school_awards", Type: field.TypeUUID, Nullable: true},
@@ -29,13 +30,13 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "awards_schools_awards",
-				Columns:    []*schema.Column{AwardsColumns[8]},
+				Columns:    []*schema.Column{AwardsColumns[9]},
 				RefColumns: []*schema.Column{SchoolsColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
 			{
 				Symbol:     "awards_voting_sessions_awards",
-				Columns:    []*schema.Column{AwardsColumns[9]},
+				Columns:    []*schema.Column{AwardsColumns[10]},
 				RefColumns: []*schema.Column{VotingSessionsColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
@@ -50,6 +51,10 @@ var (
 		{Name: "cover_image_key", Type: field.TypeString, Nullable: true},
 		{Name: "description", Type: field.TypeString, Nullable: true},
 		{Name: "display_order", Type: field.TypeInt, Default: 0},
+		{Name: "bangumi_id", Type: field.TypeString, Nullable: true},
+		{Name: "related_bangumi_id", Type: field.TypeString, Nullable: true},
+		{Name: "related_name", Type: field.TypeString, Nullable: true},
+		{Name: "related_image_url", Type: field.TypeString, Nullable: true},
 		{Name: "award_nominees", Type: field.TypeUUID},
 	}
 	// NomineesTable holds the schema information for the "nominees" table.
@@ -60,7 +65,7 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "nominees_awards_nominees",
-				Columns:    []*schema.Column{NomineesColumns[7]},
+				Columns:    []*schema.Column{NomineesColumns[11]},
 				RefColumns: []*schema.Column{AwardsColumns[0]},
 				OnDelete:   schema.NoAction,
 			},

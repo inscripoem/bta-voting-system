@@ -23,6 +23,10 @@ func (Nominee) Fields() []ent.Field {
 		field.String("cover_image_key").Optional(),
 		field.String("description").Optional(),
 		field.Int("display_order").Default(0),
+		field.String("bangumi_id").Optional(),
+		field.String("related_bangumi_id").Optional(),
+		field.String("related_name").Optional(),
+		field.String("related_image_url").Optional(),
 	}
 }
 
