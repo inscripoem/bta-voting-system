@@ -222,7 +222,7 @@ function SchoolsContent() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">学校管理</h1>
         {isSuperAdmin && (
@@ -240,21 +240,17 @@ function SchoolsContent() {
         </Alert>
       )}
 
-      <Card>
-        <CardContent className="p-0">
-          <DataTable
-            columns={columns}
-            data={data}
-            total={total}
-            page={page}
-            pageSize={pageSize}
-            onPageChange={(p) => updateQuery({ page: p })}
-            onPageSizeChange={(ps) => updateQuery({ page_size: ps, page: 1 })}
-            searchValue={q}
-            onSearchChange={(val) => updateQuery({ q: val, page: 1 })}
-          />
-        </CardContent>
-      </Card>
+      <DataTable
+        columns={columns}
+        data={data}
+        total={total}
+        page={page}
+        pageSize={pageSize}
+        onPageChange={(p) => updateQuery({ page: p })}
+        onPageSizeChange={(ps) => updateQuery({ page_size: ps, page: 1 })}
+        searchValue={q}
+        onSearchChange={(val) => updateQuery({ q: val, page: 1 })}
+      />
 
       {/* Edit Dialog */}
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>

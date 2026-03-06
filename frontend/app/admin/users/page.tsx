@@ -194,7 +194,7 @@ function UsersContent() {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="py-6 space-y-4">
       <DataTable
         columns={columns}
         data={users}
