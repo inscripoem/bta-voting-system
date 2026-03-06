@@ -874,9 +874,10 @@ function NomineeFormDialog({
 
     if (comboConfig) {
       try {
-        const res = await fetch(`https://api.bgm.tv${comboConfig.nomToRel(item.id)}`).then(r => r.json())
-        setCachedNomRels(res || [])
-        setRelDropdown({ isOpen: !selectedRelatedId, data: res || [], type: 'cached' })
+        const rawRes = await fetch(`https://api.bgm.tv${comboConfig.nomToRel(item.id)}`).then(r => r.json())
+        const uniqueRes = Array.from(new Map((rawRes || []).map((x: any) => [x.id || x.subject_id, x])).values())
+        setCachedNomRels(uniqueRes || [])
+        setRelDropdown({ isOpen: !selectedRelatedId, data: uniqueRes, type: 'cached' })
       } catch (e) { console.error(e) }
     }
   }
@@ -920,16 +921,17 @@ function NomineeFormDialog({
 
     if (comboConfig) {
       try {
-        let res = await fetch(`https://api.bgm.tv${comboConfig.relToNom(itemId)}`).then(r => r.json())
-        res = res || []
+        let rawRes = await fetch(`https://api.bgm.tv${comboConfig.relToNom(itemId)}`).then(r => r.json())
+        rawRes = rawRes || []
         if (award.type === "staff") {
-          res = res.filter((x: any) => {
+          rawRes = rawRes.filter((x: any) => {
             const rel = x.relation || ""
             return !rel.includes("歌") && !rel.includes("声优") && !rel.includes("出演")
           })
         }
-        setCachedRelNoms(res)
-        setNomDropdown({ isOpen: !formData.bangumi_id, data: res, type: 'cached' })
+        const uniqueRes = Array.from(new Map(rawRes.map((x: any) => [x.id, x])).values())
+        setCachedRelNoms(uniqueRes)
+        setNomDropdown({ isOpen: !formData.bangumi_id, data: uniqueRes, type: 'cached' })
       } catch (e) { console.error(e) }
     }
   }
@@ -1025,8 +1027,8 @@ function NomineeFormDialog({
                     {nomDropdown.data.length === 0 ? (
                       <div className="p-3 text-sm text-muted-foreground">未找到匹配项，请删除关联内容后重试</div>
                     ) : (
-                      nomDropdown.data.map((item) => (
-                        <div key={item.id} className="flex items-center gap-3 p-2 hover:bg-muted cursor-pointer transition-colors" onClick={() => onSelectNominee(item)}>
+                      nomDropdown.data.map((item, index) => (
+                        <div key={`${item.id}-${index}`} className="flex items-center gap-3 p-2 hover:bg-muted cursor-pointer transition-colors" onClick={() => onSelectNominee(item)}>
                           {item.images?.small ? (
                             // eslint-disable-next-line @next/next/no-img-element
                             <img src={item.images.small} alt="cover" className="w-10 h-10 object-cover object-top rounded" referrerPolicy="no-referrer" />
@@ -1070,10 +1072,10 @@ function NomineeFormDialog({
                     {relDropdown.data.length === 0 ? (
                       <div className="p-3 text-sm text-muted-foreground">未找到匹配项，请删除提名内容后重试</div>
                     ) : (
-                      relDropdown.data.map((item) => {
+                      relDropdown.data.map((item, index) => {
                         const cover = item.images?.small || item.image
                         return (
-                          <div key={item.subject_id || item.id} className="flex items-center gap-3 p-2 hover:bg-muted cursor-pointer transition-colors" onClick={() => onSelectRelated(item)}>
+                          <div key={`${item.id || item.subject_id}-${index}`} className="flex items-center gap-3 p-2 hover:bg-muted cursor-pointer transition-colors" onClick={() => onSelectRelated(item)}>
                             {cover ? (
                               // eslint-disable-next-line @next/next/no-img-element
                               <img src={cover} alt="cover" className="w-10 h-10 object-cover object-top rounded" referrerPolicy="no-referrer" />
