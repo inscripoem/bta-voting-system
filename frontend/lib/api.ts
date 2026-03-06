@@ -24,6 +24,11 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     const err = await res.json().catch(() => ({ message: res.statusText }))
     throw new APIError(res.status, (err as { message?: string }).message ?? res.statusText)
   }
+
+  if (res.status === 204) {
+    return null as unknown as T
+  }
+
   return res.json() as Promise<T>
 }
 
