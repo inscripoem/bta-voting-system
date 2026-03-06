@@ -535,6 +535,7 @@ function NomineeSheet({
       fetchNominees()
       setDeletingNomineeId(null)
     } catch (err: any) {
+      console.log(err)
       if (err.status === 409) {
         alert("无法删除提名人：此提名人已有投票记录。")
       } else {
