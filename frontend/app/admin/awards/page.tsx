@@ -1029,7 +1029,7 @@ function NomineeFormDialog({
                         <div key={item.id} className="flex items-center gap-3 p-2 hover:bg-muted cursor-pointer transition-colors" onClick={() => onSelectNominee(item)}>
                           {item.images?.small ? (
                             // eslint-disable-next-line @next/next/no-img-element
-                            <img src={item.images.small} alt="cover" className="w-10 h-10 object-cover rounded" referrerPolicy="no-referrer" />
+                            <img src={item.images.small} alt="cover" className="w-10 h-10 object-cover object-top rounded" referrerPolicy="no-referrer" />
                           ) : <div className="w-10 h-10 bg-muted rounded flex items-center justify-center text-xs shrink-0">无图</div>}
                           <div className="flex flex-col overflow-hidden">
                             <span className="text-sm font-medium truncate">{getNameCn(item)}</span>
@@ -1076,7 +1076,7 @@ function NomineeFormDialog({
                           <div key={item.subject_id || item.id} className="flex items-center gap-3 p-2 hover:bg-muted cursor-pointer transition-colors" onClick={() => onSelectRelated(item)}>
                             {cover ? (
                               // eslint-disable-next-line @next/next/no-img-element
-                              <img src={cover} alt="cover" className="w-10 h-10 object-cover rounded" referrerPolicy="no-referrer" />
+                              <img src={cover} alt="cover" className="w-10 h-10 object-cover object-top rounded" referrerPolicy="no-referrer" />
                             ) : <div className="w-10 h-10 bg-muted rounded flex items-center justify-center text-xs shrink-0">无图</div>}
                             <div className="flex flex-col overflow-hidden">
                               <span className="text-sm font-medium truncate">{getNameCn(item)}</span>
