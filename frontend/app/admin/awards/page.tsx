@@ -52,6 +52,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
+import { getBangumiImage } from "@/lib/utils"
 
 export default function AdminAwardsPage() {
   const router = useRouter()
@@ -883,7 +884,7 @@ function NomineeFormDialog({
     const nameCn = getNameCn(item)
     setFormData(prev => ({
       ...prev, name: nameCn, bangumi_id: String(item.id),
-      cover_image_key: item.images?.large || item.images?.medium || item.images?.small || prev.cover_image_key,
+      cover_image_key: getBangumiImage(item.images, 'medium') || prev.cover_image_key,
       description: item.summary || item.short_summary || prev.description
     }))
     setNomDropdown(prev => ({ ...prev, isOpen: false }))
@@ -923,7 +924,7 @@ function NomineeFormDialog({
   const onSelectRelated = async (item: any) => {
     const nameCn = getNameCn(item)
     const itemId = item.subject_id || item.id
-    const cover = item.images?.small || item.image || ""
+    const cover = getBangumiImage(item.images, 'small') || item.image || ""
     setRelatedQuery(nameCn)
     setSelectedRelatedId(String(itemId))
     
@@ -995,14 +996,14 @@ function NomineeFormDialog({
                     <div key={item.id} className="flex items-center gap-3 p-2 hover:bg-muted cursor-pointer transition-colors" onClick={() => {
                         setFormData(prev => ({
                           ...prev, name: item.name_cn || item.name, bangumi_id: String(item.id),
-                          cover_image_key: item.images?.common || item.images?.large || item.images?.medium || prev.cover_image_key,
+                          cover_image_key: getBangumiImage(item.images, 'common') || prev.cover_image_key,
                           description: item.summary || prev.description,
                         }))
                         setSearchResults([]) 
                       }}>
-                      {item.images?.small ? (
+                      {getBangumiImage(item.images, 'small') ? (
                         // eslint-disable-next-line @next/next/no-img-element
-                        <img src={item.images.small} alt="cover" className="w-10 h-10 object-cover rounded" referrerPolicy="no-referrer" />
+                        <img src={getBangumiImage(item.images, 'small') || item.image} alt="cover" className="w-10 h-10 object-cover rounded" referrerPolicy="no-referrer" />
                       ) : <div className="w-10 h-10 bg-muted rounded flex items-center justify-center text-xs shrink-0">无图</div>}
                       <div className="flex flex-col overflow-hidden w-full">
                         <div className="flex items-center gap-2">
@@ -1047,18 +1048,21 @@ function NomineeFormDialog({
                     {nomDropdown.data.length === 0 ? (
                       <div className="p-3 text-sm text-muted-foreground">未找到匹配项，请删除关联内容后重试</div>
                     ) : (
-                      nomDropdown.data.map((item, index) => (
-                        <div key={`${item.id}-${index}`} className="flex items-center gap-3 p-2 hover:bg-muted cursor-pointer transition-colors" onClick={() => onSelectNominee(item)}>
-                          {item.images?.small ? (
+                      nomDropdown.data.map((item, index) => {
+                        const cover = getBangumiImage(item.images, 'small') || item.image
+                        return (
+                          <div key={`${item.id}-${index}`} className="flex items-center gap-3 p-2 hover:bg-muted cursor-pointer transition-colors" onClick={() => onSelectNominee(item)}>
+                          {cover ? (
                             // eslint-disable-next-line @next/next/no-img-element
-                            <img src={item.images.small} alt="cover" className="w-10 h-10 object-cover object-top rounded" referrerPolicy="no-referrer" />
+                            <img src={cover} alt="cover" className="w-10 h-10 object-cover object-top rounded" referrerPolicy="no-referrer" />
                           ) : <div className="w-10 h-10 bg-muted rounded flex items-center justify-center text-xs shrink-0">无图</div>}
                           <div className="flex flex-col overflow-hidden">
                             <span className="text-sm font-medium truncate">{getNameCn(item)}</span>
                             <span className="text-xs text-muted-foreground truncate">{item.name} | {getExtraInfo(item)}</span>
                           </div>
                         </div>
-                      ))
+                        )
+                      })
                     )}
                     <div className="p-2 text-center text-xs text-primary cursor-pointer hover:bg-muted sticky bottom-0 bg-background" onClick={() => setNomDropdown({...nomDropdown, isOpen: false})}>关闭列表</div>
                   </div>
@@ -1093,7 +1097,7 @@ function NomineeFormDialog({
                       <div className="p-3 text-sm text-muted-foreground">未找到匹配项，请删除提名内容后重试</div>
                     ) : (
                       relDropdown.data.map((item, index) => {
-                        const cover = item.images?.small || item.image
+                        const cover = getBangumiImage(item.images, 'small') || item.image
                         return (
                           <div key={`${item.id || item.subject_id}-${index}`} className="flex items-center gap-3 p-2 hover:bg-muted cursor-pointer transition-colors" onClick={() => onSelectRelated(item)}>
                             {cover ? (

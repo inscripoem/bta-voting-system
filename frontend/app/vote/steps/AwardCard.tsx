@@ -66,8 +66,10 @@ export function AwardCard({ award, votes, onVote }: Props) {
                       referrerPolicy="no-referrer"
                     />
                   ) : (
-                    <div className="w-16 h-20 sm:w-20 sm:h-28 rounded-md bg-muted flex items-center justify-center border border-border/50 shrink-0 shadow-sm">
-                      <span className="text-xs text-muted-foreground/50">无封面</span>
+                    <div className="w-16 h-20 sm:w-20 sm:h-28 rounded-md bg-muted flex items-center justify-center border border-border/50 shrink-0 shadow-sm overflow-hidden">
+                      <span className="text-2xl sm:text-4xl font-bold text-muted-foreground/30 select-none">
+                        {nominee.name.charAt(0)}
+                      </span>
                     </div>
                   )}
                 </div>
@@ -89,7 +91,11 @@ export function AwardCard({ award, votes, onVote }: Props) {
                           referrerPolicy="no-referrer"
                         />
                       ) : (
-                        <div className="w-4 h-4 rounded-full bg-border shrink-0" />
+                        <div className="w-4 h-4 rounded-full bg-muted-foreground/20 flex items-center justify-center shrink-0 overflow-hidden">
+                          <span className="text-[9px] font-bold text-muted-foreground">
+                            {nominee.related_name.charAt(0)}
+                          </span>
+                        </div>
                       )}
                       <span className="truncate max-w-[150px] sm:max-w-[200px] font-medium">
                         {nominee.related_name}
