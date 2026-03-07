@@ -535,7 +535,6 @@ function NomineeSheet({
       fetchNominees()
       setDeletingNomineeId(null)
     } catch (err: any) {
-      console.log(err)
       if (err.status === 409) {
         alert("无法删除提名人：此提名人已有投票记录。")
       } else {
@@ -806,6 +805,22 @@ function NomineeFormDialog({
     return parts.join(" | ")
   }
 
+  const renderSubjectTypeBadge = (type: number) => {
+    switch (type) {
+      case 1: return <span className="bg-green-100 text-green-700 border border-green-200 px-1.5 py-0.5 rounded text-[10px] font-bold shrink-0">书籍</span>
+      case 2: return <span className="bg-red-100 text-red-700 border border-red-200 px-1.5 py-0.5 rounded text-[10px] font-bold shrink-0">动画</span>
+      case 3: return <span className="bg-purple-100 text-purple-700 border border-purple-200 px-1.5 py-0.5 rounded text-[10px] font-bold shrink-0">音乐</span>
+      case 4: return <span className="bg-blue-100 text-blue-700 border border-blue-200 px-1.5 py-0.5 rounded text-[10px] font-bold shrink-0">游戏</span>
+      case 6: return <span className="bg-yellow-100 text-yellow-700 border border-yellow-200 px-1.5 py-0.5 rounded text-[10px] font-bold shrink-0">三次元</span>
+      default: return null
+    }
+  }
+
+  const getYear = (dateStr?: string) => {
+    if (!dateStr) return "未知年份"
+    return dateStr.substring(0, 4)
+  }
+
   const searchBangumi = async () => {
     if (!formData.name.trim()) return
     setIsSearching(true)
@@ -989,9 +1004,12 @@ function NomineeFormDialog({
                         // eslint-disable-next-line @next/next/no-img-element
                         <img src={item.images.small} alt="cover" className="w-10 h-10 object-cover rounded" referrerPolicy="no-referrer" />
                       ) : <div className="w-10 h-10 bg-muted rounded flex items-center justify-center text-xs shrink-0">无图</div>}
-                      <div className="flex flex-col overflow-hidden">
-                        <span className="text-sm font-medium truncate">{item.name_cn || item.name}</span>
-                        <span className="text-xs text-muted-foreground truncate">{item.name} | ID: {item.id}</span>
+                      <div className="flex flex-col overflow-hidden w-full">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-medium truncate flex-1">{item.name_cn || item.name}</span>
+                          {renderSubjectTypeBadge(item.type || item.subject_type)}
+                        </div>
+                        <span className="text-xs text-muted-foreground truncate">{item.name} | ID: {item.id} | {getYear(item.date)}</span>
                       </div>
                     </div>
                   ))}
@@ -1082,8 +1100,11 @@ function NomineeFormDialog({
                               // eslint-disable-next-line @next/next/no-img-element
                               <img src={cover} alt="cover" className="w-10 h-10 object-cover object-top rounded" referrerPolicy="no-referrer" />
                             ) : <div className="w-10 h-10 bg-muted rounded flex items-center justify-center text-xs shrink-0">无图</div>}
-                            <div className="flex flex-col overflow-hidden">
-                              <span className="text-sm font-medium truncate">{getNameCn(item)}</span>
+                            <div className="flex flex-col overflow-hidden w-full">
+                              <div className="flex items-center gap-2">
+                                <span className="text-sm font-medium truncate flex-1">{getNameCn(item)}</span>
+                                {renderSubjectTypeBadge(item.subject_type || item.type)}
+                              </div>
                               <span className="text-xs text-muted-foreground truncate">{item.name || item.subject_name} | {getExtraInfo(item)}</span>
                             </div>
                           </div>
