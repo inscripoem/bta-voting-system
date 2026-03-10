@@ -52,7 +52,7 @@ export function VoteForm() {
   const visibleEntertainment = showAllEntertainment ? entertainment : entertainment.slice(0, SHOW_INITIALLY)
 
   return (
-    <div className="max-w-2xl mx-auto space-y-8 pb-16">
+    <div className="max-w-7xl mx-auto space-y-8 pb-16 px-4">
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-semibold">投票</h1>
         <span className="text-xs text-muted-foreground">
@@ -68,34 +68,38 @@ export function VoteForm() {
 
       {/* Mandatory awards */}
       {mandatory.length > 0 && (
-        <section className="space-y-3">
+        <section className="space-y-6">
           <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
             正赛奖项（必填）
           </h2>
-          {mandatory.map((award) => (
-            <AwardCard key={award.id} award={award} votes={votes} onVote={handleVote} />
-          ))}
+          <div className="space-y-8">
+            {mandatory.map((award) => (
+              <AwardCard key={award.id} award={award} votes={votes} onVote={handleVote} />
+            ))}
+          </div>
         </section>
       )}
 
       {/* Optional awards */}
       {optional.length > 0 && (
-        <section className="space-y-3">
+        <section className="space-y-6">
           <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
             附加奖项（选填）
           </h2>
-          <AnimatePresence initial={false}>
-            {visibleOptional.map((award) => (
-              <motion.div
-                key={award.id}
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.2 }}
-              >
-                <AwardCard award={award} votes={votes} onVote={handleVote} />
-              </motion.div>
-            ))}
-          </AnimatePresence>
+          <div className="space-y-8">
+            <AnimatePresence initial={false}>
+              {visibleOptional.map((award) => (
+                <motion.div
+                  key={award.id}
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <AwardCard award={award} votes={votes} onVote={handleVote} />
+                </motion.div>
+              ))}
+            </AnimatePresence>
+          </div>
           {optional.length > SHOW_INITIALLY && !showAllOptional && (
             <Button variant="outline" className="w-full" onClick={() => setShowAllOptional(true)}>
               展开全部 ({optional.length})
@@ -106,22 +110,24 @@ export function VoteForm() {
 
       {/* Entertainment awards */}
       {entertainment.length > 0 && (
-        <section className="space-y-3">
+        <section className="space-y-6">
           <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
             本校娱乐奖项
           </h2>
-          <AnimatePresence initial={false}>
-            {visibleEntertainment.map((award) => (
-              <motion.div
-                key={award.id}
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.2 }}
-              >
-                <AwardCard award={award} votes={votes} onVote={handleVote} />
-              </motion.div>
-            ))}
-          </AnimatePresence>
+          <div className="space-y-8">
+            <AnimatePresence initial={false}>
+              {visibleEntertainment.map((award) => (
+                <motion.div
+                  key={award.id}
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <AwardCard award={award} votes={votes} onVote={handleVote} />
+                </motion.div>
+              ))}
+            </AnimatePresence>
+          </div>
           {entertainment.length > SHOW_INITIALLY && !showAllEntertainment && (
             <Button variant="outline" className="w-full" onClick={() => setShowAllEntertainment(true)}>
               展开全部 ({entertainment.length})
