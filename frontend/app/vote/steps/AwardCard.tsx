@@ -47,11 +47,11 @@ export function AwardCard({ award, votes, onVote }: Props) {
           const canSupport = supportCount < maxSupport || current === 1
           
           return (
-            <div 
-              key={nominee.id} 
-              className="flex flex-col sm:flex-row gap-4 p-3 rounded-lg border border-border/60 bg-background hover:border-primary/30 transition-colors items-start sm:items-center relative overflow-hidden"
+            <div
+              key={nominee.id}
+              className="flex flex-col sm:flex-row gap-4 p-3 rounded-lg border border-border/60 bg-background hover:border-primary/30 transition-colors items-start sm:items-center relative overflow-hidden min-w-0"
             >
-              <div className="flex gap-4 flex-1 w-full items-center">
+              <div className="flex gap-4 flex-1 w-full items-center min-w-0">
                 <div className="relative shrink-0">
                   {nominee.cover_image_url ? (
                     <img
@@ -106,7 +106,7 @@ export function AwardCard({ award, votes, onVote }: Props) {
               </div>
 
               {/* 投票按钮组 */}
-              <div className="flex gap-1.5 shrink-0 sm:ml-auto w-full sm:w-auto justify-end mt-2 sm:mt-0 pt-2 sm:pt-0 border-t sm:border-none border-border/50">
+              <div className="flex gap-1.5 shrink-0 sm:ml-auto w-full sm:w-auto justify-end mt-2 sm:mt-0 pt-2 sm:pt-0 border-t sm:border-none border-border/50 min-w-fit">
                 {[1, 0, -1].map((score) => {
                   const isActive = current === score
                   const disabled = score === 1 && !canSupport && !isActive
