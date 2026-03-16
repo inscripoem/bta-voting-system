@@ -45,13 +45,6 @@ export function VoteForm() {
     }
   }, [session])
 
-  const handleNavigate = useCallback((awardId: string) => {
-    const element = document.getElementById(`award-${awardId}`)
-    if (element) {
-      element.scrollIntoView({ behavior: "smooth", block: "start" })
-    }
-  }, [])
-
   const mandatory = awards.filter((a) => a.category === "mandatory")
   const optional = awards.filter((a) => a.category === "optional")
   const entertainment = awards.filter((a) => a.category === "entertainment")
@@ -59,10 +52,21 @@ export function VoteForm() {
   const visibleOptional = showAllOptional ? optional : optional.slice(0, SHOW_INITIALLY)
   const visibleEntertainment = showAllEntertainment ? entertainment : entertainment.slice(0, SHOW_INITIALLY)
 
+  const handleNavigate = useCallback((awardId: string) => {
+    const isInOptional = optional.some((a) => a.id === awardId)
+    const isInEntertainment = entertainment.some((a) => a.id === awardId)
+    if (isInOptional && !showAllOptional) setShowAllOptional(true)
+    if (isInEntertainment && !showAllEntertainment) setShowAllEntertainment(true)
+    // 等待 React 渲染展开后的元素再滚动
+    setTimeout(() => {
+      document.getElementById(`award-${awardId}`)?.scrollIntoView({ behavior: "smooth", block: "start" })
+    }, 0)
+  }, [optional, entertainment, showAllOptional, showAllEntertainment])
+
   return (
     <div className="relative">
       {/* 大纲导航 - 桌面端固定右侧 */}
-      <VoteOutline awards={awards} votes={votes} onNavigate={handleNavigate} />
+      <VoteOutline awards={awards} votes={votes} onNavigate={handleNavigate} expandedOptional={showAllOptional} expandedEntertainment={showAllEntertainment} />
 
       {/* 主内容区 */}
       <div className="max-w-7xl mx-auto space-y-8 pb-16 px-4">
