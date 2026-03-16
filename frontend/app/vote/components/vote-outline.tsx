@@ -24,9 +24,11 @@ interface VoteOutlineProps {
   awards: Award[]
   votes: Record<string, number>
   onNavigate: (awardId: string) => void
+  expandedOptional: boolean
+  expandedEntertainment: boolean
 }
 
-export function VoteOutline({ awards, votes, onNavigate }: VoteOutlineProps) {
+export function VoteOutline({ awards, votes, onNavigate, expandedOptional, expandedEntertainment }: VoteOutlineProps) {
   const [activeId, setActiveId] = useState<string>("")
   const [isOpen, setIsOpen] = useState(false)
   const [isExpanded, setIsExpanded] = useState(true)
@@ -66,7 +68,7 @@ export function VoteOutline({ awards, votes, onNavigate }: VoteOutlineProps) {
     })
 
     return () => observer.disconnect()
-  }, [awards])
+  }, [awards, expandedOptional, expandedEntertainment])
 
   const handleNavigate = useCallback(
     (awardId: string) => {
@@ -171,6 +173,7 @@ export function VoteOutline({ awards, votes, onNavigate }: VoteOutlineProps) {
           variant="secondary"
           size="icon"
           onClick={() => setIsExpanded(!isExpanded)}
+          aria-label={isExpanded ? "收起投票大纲" : "展开投票大纲"}
           className="absolute left-0 top-0 -translate-x-full -ml-2 rounded-full shadow-lg bg-card/95 backdrop-blur-sm border border-border"
         >
           <ChevronRight
@@ -188,6 +191,7 @@ export function VoteOutline({ awards, votes, onNavigate }: VoteOutlineProps) {
           variant="secondary"
           size="icon"
           onClick={() => setIsOpen(true)}
+          aria-label="打开投票大纲"
           className="fixed right-4 bottom-20 lg:hidden z-50 rounded-full shadow-lg bg-card/95 backdrop-blur-sm border border-border"
         >
           <Menu className="w-5 h-5" />

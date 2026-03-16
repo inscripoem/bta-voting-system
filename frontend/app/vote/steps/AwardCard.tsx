@@ -52,7 +52,6 @@ export function AwardCard({ award, votes, onVote }: Props) {
             <NomineeCard
               key={nominee.id}
               nominee={nominee}
-              awardType={award.type}
               currentVote={current}
               canSupport={canSupport}
               onVote={onVote}
@@ -74,17 +73,24 @@ interface NomineeCardProps {
     related_name?: string | null
     related_image_url?: string | null
   }
-  awardType: string
   currentVote: number | undefined
   canSupport: boolean
   onVote: (nomineeId: string, score: number) => void
 }
 
-function NomineeCard({ nominee, awardType, currentVote, canSupport, onVote }: NomineeCardProps) {
+function NomineeCard({ nominee, currentVote, canSupport, onVote }: NomineeCardProps) {
   const [showInfo, setShowInfo] = useState(false)
   const [isLongPress, setIsLongPress] = useState(false)
   const longPressTimer = useRef<NodeJS.Timeout | null>(null)
+  const closeTimer = useRef<NodeJS.Timeout | null>(null)
   const cardRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    return () => {
+      if (longPressTimer.current) clearTimeout(longPressTimer.current)
+      if (closeTimer.current) clearTimeout(closeTimer.current)
+    }
+  }, [])
 
   // 鼠标悬停
   const handleMouseEnter = useCallback(() => {
@@ -113,7 +119,8 @@ function NomineeCard({ nominee, awardType, currentVote, canSupport, onVote }: No
       longPressTimer.current = null
     }
     // 延迟关闭，让用户能看到信息
-    setTimeout(() => {
+    if (closeTimer.current) clearTimeout(closeTimer.current)
+    closeTimer.current = setTimeout(() => {
       if (!isLongPress) {
         setShowInfo(false)
       }
@@ -145,6 +152,7 @@ function NomineeCard({ nominee, awardType, currentVote, canSupport, onVote }: No
       onMouseLeave={handleMouseLeave}
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
+      onTouchCancel={handleTouchEnd}
     >
       {/* 图片区域 - 放大 */}
       <div className="relative aspect-[2/3] bg-muted overflow-hidden">
