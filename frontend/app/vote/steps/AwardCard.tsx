@@ -131,7 +131,7 @@ function NomineeCard({ nominee, currentVote, canSupport, onVote }: NomineeCardPr
   // 点击外部关闭
   useEffect(() => {
     if (!showInfo) return
-    const handleClickOutside = (e: MouseEvent) => {
+    const handleClickOutside = (e: Event) => {
       if (cardRef.current && !cardRef.current.contains(e.target as Node)) {
         setShowInfo(false)
       }

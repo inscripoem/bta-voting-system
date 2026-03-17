@@ -80,6 +80,7 @@ export default function SessionVotePage() {
       }
     }
     loadSession()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [yearParam, router])
 
   if (loading) {

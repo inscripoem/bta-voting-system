@@ -33,7 +33,6 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Card, CardContent } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { AlertCircle } from "lucide-react"
@@ -48,7 +47,7 @@ function SchoolsContent() {
 
   const [data, setData] = React.useState<SchoolListItem[]>([])
   const [total, setTotal] = React.useState(0)
-  const [loading, setLoading] = React.useState(true)
+  const [, setLoading] = React.useState(true)
   const [user, setUser] = React.useState<UserInfo | null>(null)
 
   const [editDialogOpen, setEditDialogOpen] = React.useState(false)
@@ -59,7 +58,7 @@ function SchoolsContent() {
     name: "",
     code: "",
     email_suffixes: [] as string[],
-    verification_questions: [] as any[],
+    verification_questions: [] as Array<{ question: string; answer?: string }>,
     is_active: true
   })
 
@@ -91,6 +90,7 @@ function SchoolsContent() {
 
   React.useEffect(() => {
     fetchSchools()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page, pageSize, q])
 
   React.useEffect(() => {

@@ -28,8 +28,8 @@ function LoginForm() {
       const res = await api.auth.login(email, password)
       saveTokens(res.access_token, res.refresh_token)
       window.location.href = next
-    } catch (err: any) {
-      setError(err.message ?? "登录失败")
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "登录失败")
     } finally {
       setLoading(false)
     }
