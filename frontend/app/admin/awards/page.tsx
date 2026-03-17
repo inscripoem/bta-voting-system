@@ -2,13 +2,11 @@
 
 import * as React from "react"
 import { useRouter, useSearchParams } from "next/navigation"
-import { 
-  Plus, 
-  Pencil, 
-  Trash2, 
-  Users, 
-  ArrowLeft,
-  ChevronRight
+import {
+  Plus,
+  Pencil,
+  Trash2,
+  Users,
 } from "lucide-react"
 import { ColumnDef } from "@tanstack/react-table"
 
@@ -54,6 +52,30 @@ import {
 } from "@/components/ui/alert-dialog"
 import { getBangumiImage } from "@/lib/utils"
 
+interface BangumiItem {
+  id?: number
+  subject_id?: number
+  name?: string
+  name_cn?: string
+  summary?: string
+  short_summary?: string
+  images?: Record<string, string>
+  infobox?: Array<{ key: string; value: unknown }>
+  subject_name?: string
+  image?: string
+  relation?: string
+  staff?: string
+  date?: string
+  type?: number
+  subject_type?: number
+}
+
+type BangumiSearchBody = {
+  keyword: string
+  sort: string
+  filter?: { type: number[] }
+}
+
 export default function AdminAwardsPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -65,7 +87,7 @@ export default function AdminAwardsPage() {
   const [total, setTotal] = React.useState(0)
   const [page, setPage] = React.useState(1)
   const [pageSize, setPageSize] = React.useState(10)
-  const [loading, setLoading] = React.useState(false)
+  const [, setLoading] = React.useState(false)
 
   // Award Dialog State
   const [isAwardDialogOpen, setIsAwardDialogOpen] = React.useState(false)
@@ -118,7 +140,7 @@ export default function AdminAwardsPage() {
     try {
       await api.admin.deleteAward(id)
       fetchAwards()
-    } catch (err) {
+    } catch {
       alert("删除奖项失败")
     }
   }
@@ -363,7 +385,7 @@ function AwardDialog({
         await api.admin.createAward(formData)
       }
       onSuccess()
-    } catch (err) {
+    } catch {
       alert("保存奖项失败")
     }
   }
@@ -406,7 +428,7 @@ function AwardDialog({
               <Label htmlFor="category">分类</Label>
               <Select
                 value={formData.category}
-                onValueChange={(val: any) => setFormData({ ...formData, category: val })}
+                onValueChange={(val) => setFormData({ ...formData, category: val as "mandatory" | "optional" | "entertainment" })}
                 disabled={isSchoolAdmin}
               >
                 <SelectTrigger>
@@ -424,7 +446,7 @@ function AwardDialog({
               <Label htmlFor="type">奖项类型</Label>
               <Select
                 value={formData.type}
-                onValueChange={(val: any) => setFormData({ ...formData, type: val })}
+                onValueChange={(val) => setFormData({ ...formData, type: val as "anime" | "character" | "staff" | "seiyuu" | "other" })}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="选择类型" />
@@ -502,7 +524,7 @@ function NomineeSheet({
   const [total, setTotal] = React.useState(0)
   const [page, setPage] = React.useState(1)
   const [pageSize, setPageSize] = React.useState(10)
-  const [loading, setLoading] = React.useState(false)
+  const [, setLoading] = React.useState(false)
 
   const [isNomineeDialogOpen, setIsNomineeDialogOpen] = React.useState(false)
   const [editingNominee, setEditingNominee] = React.useState<NomineeListItem | null>(null)
@@ -535,8 +557,8 @@ function NomineeSheet({
       await api.admin.deleteNominee(deletingNomineeId)
       fetchNominees()
       setDeletingNomineeId(null)
-    } catch (err: any) {
-      if (err.status === 409) {
+    } catch (err) {
+      if ((err as { status?: number }).status === 409) {
         alert("无法删除提名人：此提名人已有投票记录。")
       } else {
         alert("删除提名人失败")
@@ -712,7 +734,7 @@ function NomineeFormDialog({
     return null
   }, [award.type])
 
-  const [searchResults, setSearchResults] = React.useState<any[]>([])
+  const [searchResults, setSearchResults] = React.useState<BangumiItem[]>([])
   const [isSearching, setIsSearching] = React.useState(false)
 
   const [relatedQuery, setRelatedQuery] = React.useState("")
@@ -721,11 +743,11 @@ function NomineeFormDialog({
   const [isNomSearching, setIsNomSearching] = React.useState(false)
   const [isRelSearching, setIsRelSearching] = React.useState(false)
 
-  const [cachedRelNoms, setCachedRelNoms] = React.useState<any[]>([]) // Related -> Nominees
-  const [cachedNomRels, setCachedNomRels] = React.useState<any[]>([]) // Nominee -> Related
+  const [cachedRelNoms, setCachedRelNoms] = React.useState<BangumiItem[]>([]) // Related -> Nominees
+  const [cachedNomRels, setCachedNomRels] = React.useState<BangumiItem[]>([]) // Nominee -> Related
 
-  const [nomDropdown, setNomDropdown] = React.useState<{isOpen: boolean, data: any[], type: 'search'|'cached'}>({isOpen: false, data: [], type: 'search'})
-  const [relDropdown, setRelDropdown] = React.useState<{isOpen: boolean, data: any[], type: 'search'|'cached'}>({isOpen: false, data: [], type: 'search'})
+  const [nomDropdown, setNomDropdown] = React.useState<{isOpen: boolean, data: BangumiItem[], type: 'search'|'cached'}>({isOpen: false, data: [], type: 'search'})
+  const [relDropdown, setRelDropdown] = React.useState<{isOpen: boolean, data: BangumiItem[], type: 'search'|'cached'}>({isOpen: false, data: [], type: 'search'})
 
   React.useEffect(() => {
     if (editingNominee) {
@@ -782,21 +804,21 @@ function NomineeFormDialog({
         await api.admin.createNominee({ ...formData, award_id: award.id })
       }
       onSuccess()
-    } catch (err) {
+    } catch {
       alert("保存提名人失败")
     }
   }
 
-  const getNameCn = (item: any) => {
+  const getNameCn = (item: BangumiItem) => {
     if (item.name_cn) return item.name_cn
     if (item.infobox) {
-      const cnObj = item.infobox.find((i: any) => i.key === "简体中文名")
+      const cnObj = item.infobox.find((i) => i.key === "简体中文名")
       if (cnObj && typeof cnObj.value === "string") return cnObj.value
     }
     return item.name || ""
   }
 
-  const getExtraInfo = (item: any) => {
+  const getExtraInfo = (item: BangumiItem) => {
     const parts = []
     if (item.id) parts.push(`ID: ${item.id}`)
     if (item.subject_name) parts.push(`出自: ${item.subject_name}`)
@@ -806,7 +828,8 @@ function NomineeFormDialog({
     return parts.join(" | ")
   }
 
-  const renderSubjectTypeBadge = (type: number) => {
+  const renderSubjectTypeBadge = (type: number | undefined) => {
+    if (type === undefined) return null
     switch (type) {
       case 1: return <span className="bg-green-100 text-green-700 border border-green-200 px-1.5 py-0.5 rounded text-[10px] font-bold shrink-0">书籍</span>
       case 2: return <span className="bg-red-100 text-red-700 border border-red-200 px-1.5 py-0.5 rounded text-[10px] font-bold shrink-0">动画</span>
@@ -826,7 +849,7 @@ function NomineeFormDialog({
     if (!formData.name.trim()) return
     setIsSearching(true)
     try {
-      const searchBody: any = {
+      const searchBody: BangumiSearchBody = {
         keyword: formData.name.trim(),
         sort: "match",
       }
@@ -872,15 +895,15 @@ function NomineeFormDialog({
       
       if (selectedRelatedId && cachedRelNoms.length > 0) {
         const validIds = new Set(cachedRelNoms.map(c => c.id))
-        results = results.filter((c: any) => validIds.has(c.id))
+        results = results.filter((c: BangumiItem) => validIds.has(c.id))
       }
       setNomDropdown({ isOpen: true, data: results, type: 'search' })
       setRelDropdown({ ...relDropdown, isOpen: false })
-    } catch (err) { alert("搜索失败") } 
+    } catch { alert("搜索失败") }
     finally { setIsNomSearching(false) }
   }
 
-  const onSelectNominee = async (item: any) => {
+  const onSelectNominee = async (item: BangumiItem) => {
     const nameCn = getNameCn(item)
     setFormData(prev => ({
       ...prev, name: nameCn, bangumi_id: String(item.id),
@@ -891,9 +914,9 @@ function NomineeFormDialog({
 
     if (comboConfig) {
       try {
-        let rawRes = await fetch(`https://api.bgm.tv${comboConfig.nomToRel(item.id)}`).then(r => r.json())
+        let rawRes = await fetch(`https://api.bgm.tv${comboConfig.nomToRel(String(item.id))}`).then(r => r.json())
         if (!Array.isArray(rawRes)) rawRes = []
-        const uniqueRes = Array.from(new Map((rawRes || []).map((x: any) => [x.id || x.subject_id, x])).values())
+        const uniqueRes = Array.from(new Map((rawRes || []).map((x: BangumiItem) => [x.id || x.subject_id, x])).values()) as BangumiItem[]
         setCachedNomRels(uniqueRes || [])
         setRelDropdown({ isOpen: !selectedRelatedId, data: uniqueRes, type: 'cached' })
       } catch (e) { console.error(e) }
@@ -913,15 +936,15 @@ function NomineeFormDialog({
       
       if (formData.bangumi_id && cachedNomRels.length > 0) {
         const validIds = new Set(cachedNomRels.map(s => s.subject_id || s.id))
-        results = results.filter((s: any) => validIds.has(s.id))
+        results = results.filter((s: BangumiItem) => validIds.has(s.id))
       }
       setRelDropdown({ isOpen: true, data: results, type: 'search' })
       setNomDropdown({ ...nomDropdown, isOpen: false })
-    } catch (err) { alert("搜索关联项失败") } 
+    } catch { alert("搜索关联项失败") }
     finally { setIsRelSearching(false) }
   }
 
-  const onSelectRelated = async (item: any) => {
+  const onSelectRelated = async (item: BangumiItem) => {
     const nameCn = getNameCn(item)
     const itemId = item.subject_id || item.id
     const cover = getBangumiImage(item.images, 'small') || item.image || ""
@@ -939,15 +962,15 @@ function NomineeFormDialog({
 
     if (comboConfig) {
       try {
-        let rawRes = await fetch(`https://api.bgm.tv${comboConfig.relToNom(itemId)}`).then(r => r.json())
+        let rawRes = await fetch(`https://api.bgm.tv${comboConfig.relToNom(String(itemId))}`).then(r => r.json())
         if (!Array.isArray(rawRes)) rawRes = []
         if (award.type === "staff") {
-          rawRes = rawRes.filter((x: any) => {
+          rawRes = rawRes.filter((x: BangumiItem) => {
             const rel = x.relation || ""
             return !rel.includes("歌") && !rel.includes("声优") && !rel.includes("出演")
           })
         }
-        const uniqueRes = Array.from(new Map(rawRes.map((x: any) => [x.id, x])).values())
+        const uniqueRes = Array.from(new Map(rawRes.map((x: BangumiItem) => [x.id, x])).values()) as BangumiItem[]
         setCachedRelNoms(uniqueRes)
         setNomDropdown({ isOpen: !formData.bangumi_id, data: uniqueRes, type: 'cached' })
       } catch (e) { console.error(e) }
@@ -995,7 +1018,7 @@ function NomineeFormDialog({
                   {searchResults.map((item) => (
                     <div key={item.id} className="flex items-center gap-3 p-2 hover:bg-muted cursor-pointer transition-colors" onClick={() => {
                         setFormData(prev => ({
-                          ...prev, name: item.name_cn || item.name, bangumi_id: String(item.id),
+                          ...prev, name: item.name_cn || item.name || '', bangumi_id: String(item.id),
                           cover_image_key: getBangumiImage(item.images, 'common') || prev.cover_image_key,
                           description: item.summary || prev.description,
                         }))

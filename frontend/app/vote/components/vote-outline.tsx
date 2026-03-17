@@ -103,7 +103,7 @@ export function VoteOutline({ awards, votes, onNavigate, expandedOptional, expan
   const totalCompleted = outlineItems.filter((i) => i.completed).length
   const totalItems = outlineItems.length
 
-  const OutlineContent = () => (
+  const renderOutlineContent = () => (
     <div className="space-y-4">
       {["mandatory", "optional", "entertainment"].map(
         (category) =>
@@ -163,7 +163,7 @@ export function VoteOutline({ awards, votes, onNavigate, expandedOptional, expan
               </div>
             </div>
             <div className="p-2 max-h-[calc(100vh-12rem)] overflow-y-auto">
-              <OutlineContent />
+              {renderOutlineContent()}
             </div>
           </div>
         </div>
@@ -205,7 +205,7 @@ export function VoteOutline({ awards, votes, onNavigate, expandedOptional, expan
               </span>
             </div>
           </SheetHeader>
-          <OutlineContent />
+          {renderOutlineContent()}
         </SheetContent>
       </Sheet>
     </>

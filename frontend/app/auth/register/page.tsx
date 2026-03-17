@@ -41,7 +41,7 @@ function UpgradeFlow() {
       await api.auth.upgrade(password)
       await refresh()
       setDone(true)
-    } catch (err: any) {
+    } catch (err) {
       setError(err instanceof APIError ? err.message : "设置密码失败")
     } finally {
       setSubmitting(false)
@@ -157,7 +157,7 @@ function DirectRegisterFlow() {
     try {
       await api.auth.sendCode(fullEmail, school.code)
       setCodeSent(true)
-    } catch (err: any) {
+    } catch (err) {
       setError(err instanceof APIError ? err.message : "发送失败")
     } finally {
       setSubmitting(false)
@@ -170,7 +170,7 @@ function DirectRegisterFlow() {
     try {
       await api.auth.sendCode(loginEmail)
       setLoginCodeSent(true)
-    } catch (err: any) {
+    } catch (err) {
       setError(err instanceof APIError ? err.message : "发送失败")
     } finally {
       setSubmitting(false)
@@ -211,7 +211,7 @@ function DirectRegisterFlow() {
       saveTokens(res.access_token, res.refresh_token)
       await refresh()
       setStep("done")
-    } catch (err: any) {
+    } catch (err) {
       setError(err instanceof APIError ? err.message : "注册失败，请重试")
     } finally {
       setSubmitting(false)
@@ -451,6 +451,7 @@ export default function RegisterPage() {
 
   useEffect(() => {
     refresh()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   if (loading) {

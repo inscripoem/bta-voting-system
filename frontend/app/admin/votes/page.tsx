@@ -29,7 +29,7 @@ function VotesContent() {
   const [sessions, setSessions] = React.useState<SessionListItem[]>([])
   const [voteItems, setVoteItems] = React.useState<VoteItemListItem[]>([])
   const [total, setTotal] = React.useState(0)
-  const [loading, setLoading] = React.useState(false)
+  const [, setLoading] = React.useState(false)
   const [user, setUser] = React.useState<UserInfo | null>(null)
   const [deletingId, setDeletingId] = React.useState<string | null>(null)
 

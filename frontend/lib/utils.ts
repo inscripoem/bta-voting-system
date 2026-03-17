@@ -5,8 +5,10 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
+type BangumiImages = Partial<Record<'grid' | 'small' | 'medium' | 'common' | 'large', string>>
+
 export const getBangumiImage = (
-  images: any,
+  images: BangumiImages | null | undefined,
   size: 'grid' | 'small' | 'medium' | 'common' | 'large' = 'common'
 ): string | null => {
   if (!images) return null;
@@ -22,7 +24,8 @@ export const getBangumiImage = (
   const priority = fallbacks[size] || fallbacks.common;
 
   for (const key of priority) {
-    if (images[key]) return images[key];
+    const val = images[key as keyof BangumiImages]
+    if (val) return val;
   }
 
   return null;

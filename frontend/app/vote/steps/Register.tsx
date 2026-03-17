@@ -30,7 +30,7 @@ export function Register() {
       await api.auth.upgrade(password)
       await refreshAuth()
       goTo("vote")
-    } catch (err: any) {
+    } catch (err) {
       setError(err instanceof APIError ? err.message : "注册失败，请重试")
     } finally {
       setLoading(false)

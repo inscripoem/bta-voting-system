@@ -34,7 +34,7 @@ function UsersContent() {
 
   const [users, setUsers] = React.useState<UserListItem[]>([])
   const [total, setTotal] = React.useState(0)
-  const [loading, setLoading] = React.useState(true)
+  const [, setLoading] = React.useState(true)
   const [isSuperAdmin, setIsSuperAdmin] = React.useState<boolean | null>(null)
 
   // Edit role state
@@ -90,7 +90,7 @@ function UsersContent() {
     if (!editingUser || !newRole) return
     setSubmitting(true)
     try {
-      await api.admin.patchUserRole(editingUser.id, newRole as any)
+      await api.admin.patchUserRole(editingUser.id, newRole as "voter" | "school_admin" | "super_admin")
       setEditingUser(null)
       fetchUsers()
     } catch (err) {
