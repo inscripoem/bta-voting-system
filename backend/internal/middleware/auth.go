@@ -13,11 +13,21 @@ const ClaimsKey = "claims"
 func JWT(jwtSvc *service.JWTService) echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
-			header := c.Request().Header.Get("Authorization")
-			if !strings.HasPrefix(header, "Bearer ") {
-				return echo.NewHTTPError(http.StatusUnauthorized, "missing or invalid authorization header")
+			var token string
+
+			if cookie, err := c.Cookie("access_token"); err == nil {
+				token = cookie.Value
+			} else {
+				header := c.Request().Header.Get("Authorization")
+				if strings.HasPrefix(header, "Bearer ") {
+					token = strings.TrimPrefix(header, "Bearer ")
+				}
 			}
-			token := strings.TrimPrefix(header, "Bearer ")
+
+			if token == "" {
+				return echo.NewHTTPError(http.StatusUnauthorized, "missing or invalid authorization")
+			}
+
 			claims, err := jwtSvc.ParseAccess(token)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusUnauthorized, "invalid or expired token")

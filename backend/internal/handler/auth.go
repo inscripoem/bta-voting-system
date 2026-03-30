@@ -3,8 +3,10 @@ package handler
 import (
 	"net/http"
 
+	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 
+	"github.com/inscripoem/bta-voting-system/backend/internal/config"
 	"github.com/inscripoem/bta-voting-system/backend/internal/ent"
 	entuser "github.com/inscripoem/bta-voting-system/backend/internal/ent/user"
 	apimw "github.com/inscripoem/bta-voting-system/backend/internal/middleware"
@@ -12,12 +14,12 @@ import (
 )
 
 type AuthHandler struct {
-	auth    *service.AuthService
-	frontendURL string
+	auth *service.AuthService
+	cfg  *config.Config
 }
 
-func NewAuthHandler(auth *service.AuthService, frontendURL string) *AuthHandler {
-	return &AuthHandler{auth: auth, frontendURL: frontendURL}
+func NewAuthHandler(auth *service.AuthService, cfg *config.Config) *AuthHandler {
+	return &AuthHandler{auth: auth, cfg: cfg}
 }
 
 type guestRequest struct {
@@ -74,10 +76,10 @@ func (h *AuthHandler) Guest(c echo.Context) error {
 		}
 	}
 
-	return c.JSON(http.StatusOK, map[string]string{
-		"access_token":  access,
-		"refresh_token": refresh,
-	})
+	h.setCookie(c, "access_token", access, 900, "/")
+	h.setCookie(c, "refresh_token", refresh, 604800, "/api/v1/auth")
+
+	return c.JSON(http.StatusOK, map[string]string{"message": "success"})
 }
 
 func (h *AuthHandler) CheckNickname(c echo.Context) error {
@@ -133,10 +135,11 @@ func (h *AuthHandler) ClaimNickname(c echo.Context) error {
 			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 		}
 	}
-	return c.JSON(http.StatusOK, map[string]string{
-		"access_token":  access,
-		"refresh_token": refresh,
-	})
+
+	h.setCookie(c, "access_token", access, 900, "/")
+	h.setCookie(c, "refresh_token", refresh, 604800, "/api/v1/auth")
+
+	return c.JSON(http.StatusOK, map[string]string{"message": "success"})
 }
 
 type sendCodeRequest struct {
@@ -222,10 +225,10 @@ func (h *AuthHandler) RegisterDirect(c echo.Context) error {
 		}
 	}
 
-	return c.JSON(http.StatusOK, map[string]string{
-		"access_token":  access,
-		"refresh_token": refresh,
-	})
+	h.setCookie(c, "access_token", access, 900, "/")
+	h.setCookie(c, "refresh_token", refresh, 604800, "/api/v1/auth")
+
+	return c.JSON(http.StatusOK, map[string]string{"message": "success"})
 }
 
 type loginRequest struct {
@@ -242,10 +245,11 @@ func (h *AuthHandler) Login(c echo.Context) error {
 	if err != nil {
 		return echo.NewHTTPError(http.StatusUnauthorized, "invalid credentials")
 	}
-	return c.JSON(http.StatusOK, map[string]string{
-		"access_token":  access,
-		"refresh_token": refresh,
-	})
+
+	h.setCookie(c, "access_token", access, 900, "/")
+	h.setCookie(c, "refresh_token", refresh, 604800, "/api/v1/auth")
+
+	return c.JSON(http.StatusOK, map[string]string{"message": "success"})
 }
 
 // Me returns the current authenticated user's profile.
@@ -312,6 +316,24 @@ func (h *AuthHandler) Upgrade(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to upgrade account")
 	}
 
+	updatedUser, err := h.auth.DB().User.Query().Where(entuser.ID(claims.UserID)).WithSchool().Only(c.Request().Context())
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to load updated user")
+	}
+
+	var schoolID *uuid.UUID
+	if updatedUser.Edges.School != nil {
+		sid := updatedUser.Edges.School.ID
+		schoolID = &sid
+	}
+
+	access, err := h.auth.JWT().GenerateAccess(updatedUser.ID, updatedUser.Role, schoolID, false)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to generate access token")
+	}
+
+	h.setCookie(c, "access_token", access, 900, "/")
+
 	return c.JSON(http.StatusOK, map[string]string{"message": "账户升级成功"})
 }
 
@@ -333,4 +355,94 @@ func (h *AuthHandler) VerifyEmail(c echo.Context) error {
 	}
 
 	return c.JSON(http.StatusOK, map[string]string{"message": "邮箱验证成功"})
+}
+
+func (h *AuthHandler) setCookie(c echo.Context, name, value string, maxAge int, path string) {
+	cookie := &http.Cookie{
+		Name:     name,
+		Value:    value,
+		Path:     path,
+		MaxAge:   maxAge,
+		HttpOnly: true,
+		Secure:   h.cfg.CookieSecure,
+		SameSite: parseSameSite(h.cfg.CookieSameSite),
+	}
+	if h.cfg.CookieDomain != "" {
+		cookie.Domain = h.cfg.CookieDomain
+	}
+	c.SetCookie(cookie)
+}
+
+func (h *AuthHandler) clearCookie(c echo.Context, name string, path string) {
+	cookie := &http.Cookie{
+		Name:     name,
+		Value:    "",
+		Path:     path,
+		MaxAge:   -1,
+		HttpOnly: true,
+		Secure:   h.cfg.CookieSecure,
+		SameSite: parseSameSite(h.cfg.CookieSameSite),
+	}
+	if h.cfg.CookieDomain != "" {
+		cookie.Domain = h.cfg.CookieDomain
+	}
+	c.SetCookie(cookie)
+}
+
+func parseSameSite(s string) http.SameSite {
+	switch s {
+	case "Strict":
+		return http.SameSiteStrictMode
+	case "None":
+		return http.SameSiteNoneMode
+	default:
+		return http.SameSiteLaxMode
+	}
+}
+
+func (h *AuthHandler) Refresh(c echo.Context) error {
+	cookie, err := c.Cookie("refresh_token")
+	if err != nil {
+		return echo.NewHTTPError(http.StatusUnauthorized, "missing refresh token")
+	}
+
+	userID, err := h.auth.JWT().ParseRefresh(cookie.Value)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusUnauthorized, "invalid refresh token")
+	}
+
+	user, err := h.auth.DB().User.Query().
+		Where(entuser.ID(userID)).
+		WithSchool().
+		Only(c.Request().Context())
+	if err != nil {
+		return echo.NewHTTPError(http.StatusUnauthorized, "user not found")
+	}
+
+	var schoolID *uuid.UUID
+	if user.Edges.School != nil {
+		sid := user.Edges.School.ID
+		schoolID = &sid
+	}
+
+	access, err := h.auth.JWT().GenerateAccess(user.ID, user.Role, schoolID, user.IsGuest)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to generate access token")
+	}
+
+	refresh, err := h.auth.JWT().GenerateRefresh(user.ID)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to generate refresh token")
+	}
+
+	h.setCookie(c, "access_token", access, 900, "/")
+	h.setCookie(c, "refresh_token", refresh, 604800, "/api/v1/auth")
+
+	return c.JSON(http.StatusOK, map[string]string{"message": "refreshed"})
+}
+
+func (h *AuthHandler) Logout(c echo.Context) error {
+	h.clearCookie(c, "access_token", "/")
+	h.clearCookie(c, "refresh_token", "/api/v1/auth")
+	return c.JSON(http.StatusOK, map[string]string{"message": "logged out"})
 }

@@ -55,7 +55,7 @@ func main() {
 	voteSvc := service.NewVoteService(db)
 
 	// Handlers
-	authH := handler.NewAuthHandler(authSvc, cfg.FrontendURL)
+	authH := handler.NewAuthHandler(authSvc, cfg)
 	voteH := handler.NewVoteHandler(voteSvc)
 	schoolH := handler.NewSchoolHandler(db)
 	awardH := handler.NewAwardHandler(db, cfg)
@@ -99,8 +99,10 @@ func main() {
 	v1.POST("/auth/register", authH.RegisterDirect)
 	v1.POST("/auth/send-code", authH.SendCode)
 	v1.POST("/auth/login", authH.Login)
+	v1.POST("/auth/refresh", authH.Refresh)
 	v1.POST("/auth/upgrade", authH.Upgrade, jwtMW)
 	v1.POST("/auth/verify-email", authH.VerifyEmail, jwtMW)
+	v1.POST("/auth/logout", authH.Logout, jwtMW)
 
 	// User info (requires JWT)
 	v1.GET("/me", authH.Me, jwtMW)

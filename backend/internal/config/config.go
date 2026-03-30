@@ -23,10 +23,14 @@ type Config struct {
 	FrontendURL      string
 	BackendBaseURL   string // Base URL for constructing cover_image_url
 	UploadDir        string // Directory for static file uploads
+	CookieSecure     bool   // HTTPS-only cookie flag
+	CookieSameSite   string // SameSite attribute: "Lax", "Strict", or "None"
+	CookieDomain     string // Cookie domain (empty for default)
 }
 
 func Load() (*Config, error) {
 	port, _ := strconv.Atoi(getEnv("SMTP_PORT", "587"))
+	cookieSecure, _ := strconv.ParseBool(getEnv("COOKIE_SECURE", "true"))
 	c := &Config{
 		DatabaseURL:      requireEnv("DATABASE_URL"),
 		JWTSecret:        requireEnv("JWT_SECRET"),
@@ -44,6 +48,9 @@ func Load() (*Config, error) {
 		FrontendURL:      getEnv("FRONTEND_URL", "http://localhost:3000"),
 		BackendBaseURL:   getEnv("BACKEND_BASE_URL", "http://localhost:8080"),
 		UploadDir:        getEnv("UPLOAD_DIR", "./uploads"),
+		CookieSecure:     cookieSecure,
+		CookieSameSite:   getEnv("COOKIE_SAMESITE", "Lax"),
+		CookieDomain:     getEnv("COOKIE_DOMAIN", ""),
 	}
 	return c, nil
 }
