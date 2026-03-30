@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
-import { api, APIError, saveTokens, School, SchoolDetail } from "@/lib/api"
+import { api, APIError, School, SchoolDetail } from "@/lib/api"
 import { useAuthStore } from "@/hooks/useAuthStore"
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -208,7 +208,6 @@ function DirectRegisterFlow() {
         )
         return
       }
-      saveTokens(res.access_token, res.refresh_token)
       await refresh()
       setStep("done")
     } catch (err) {

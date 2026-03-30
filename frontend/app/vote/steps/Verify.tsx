@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { ArrowLeft } from "lucide-react"
-import { api, APIError, saveTokens } from "@/lib/api"
+import { api, APIError } from "@/lib/api"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import {
@@ -88,7 +88,6 @@ export function Verify() {
         setConflict(res.conflict, pendingNickname, res.is_guest)
         return
       }
-      saveTokens(res.access_token, res.refresh_token)
       await refreshAuth()
       setVerificationResult(method, method === "email" ? fullEmail : guestEmail)
       goTo("register")

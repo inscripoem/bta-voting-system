@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import Link from "next/link"
-import { api, APIError, saveTokens } from "@/lib/api"
+import { api, APIError } from "@/lib/api"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { useVoteStore } from "@/hooks/useVoteStore"
@@ -72,7 +72,6 @@ export function NicknameConflict() {
           : "认领失败，请重试")
         return
       }
-      saveTokens(res.access_token, res.refresh_token)
       await refreshAuth()
       goTo("vote")
     } catch (err) {

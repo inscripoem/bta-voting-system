@@ -1,25 +1,70 @@
 const BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080/api/v1"
 
-async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  const token =
-    typeof window !== "undefined" ? localStorage.getItem("access_token") : null
+let isRefreshing = false
+let refreshPromise: Promise<void> | null = null
+
+async function refreshToken(): Promise<void> {
+  const res = await fetch(`${BASE}/auth/refresh`, {
+    method: "POST",
+    credentials: "include",
+  })
+  if (!res.ok) {
+    throw new Error("Refresh failed")
+  }
+}
+
+async function fetchWithRefresh(path: string, init?: RequestInit): Promise<Response> {
+  const skipRefresh = path.startsWith("/auth/login") ||
+                      path.startsWith("/auth/register") ||
+                      path.startsWith("/auth/refresh")
+
   const res = await fetch(`${BASE}${path}`, {
     ...init,
+    credentials: "include",
     headers: {
-      "Content-Type": "application/json",
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...(init?.headers ?? {}),
     },
   })
-  if (res.status === 401 && typeof window !== "undefined") {
-    const hadToken = !!localStorage.getItem("access_token")
-    clearTokens()
-    if (hadToken && !window.location.pathname.startsWith("/auth/")) {
-      const next = encodeURIComponent(window.location.pathname + window.location.search)
-      window.location.href = `/auth/login?next=${next}`
+
+  if (res.status === 401 && !skipRefresh && typeof window !== "undefined") {
+    if (!isRefreshing) {
+      isRefreshing = true
+      refreshPromise = refreshToken()
+        .then(() => {
+          isRefreshing = false
+          refreshPromise = null
+        })
+        .catch(() => {
+          isRefreshing = false
+          refreshPromise = null
+          if (!window.location.pathname.startsWith("/auth/")) {
+            const next = encodeURIComponent(window.location.pathname + window.location.search)
+            window.location.href = `/auth/login?next=${next}`
+          }
+          throw new APIError(401, "Unauthorized")
+        })
     }
+
+    if (refreshPromise) {
+      await refreshPromise
+      return fetchWithRefresh(path, init)
+    }
+
     throw new APIError(401, "Unauthorized")
   }
+
+  return res
+}
+
+async function request<T>(path: string, init?: RequestInit): Promise<T> {
+  const res = await fetchWithRefresh(path, {
+    ...init,
+    headers: {
+      "Content-Type": "application/json",
+      ...(init?.headers ?? {}),
+    },
+  })
+
   if (!res.ok) {
     const err = await res.json().catch(() => ({ message: res.statusText }))
     throw new APIError(res.status, (err as { message?: string }).message ?? res.statusText)
@@ -43,27 +88,13 @@ export class APIError extends Error {
 }
 
 export async function requestBlob(path: string, init?: RequestInit): Promise<Blob> {
-  const token = typeof window !== "undefined" ? localStorage.getItem("access_token") : null
-  const res = await fetch(`${BASE}${path}`, {
-    ...init,
-    headers: {
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      ...(init?.headers ?? {}),
-    },
-  })
-  if (res.status === 401 && typeof window !== "undefined") {
-    const hadToken = !!token
-    clearTokens()
-    if (hadToken && !window.location.pathname.startsWith("/auth/")) {
-      const next = encodeURIComponent(window.location.pathname + window.location.search)
-      window.location.href = `/auth/login?next=${next}`
-    }
-    throw new APIError(401, "Unauthorized")
-  }
+  const res = await fetchWithRefresh(path, init)
+
   if (!res.ok) {
     const err = await res.json().catch(() => ({ message: res.statusText }))
     throw new APIError(res.status, (err as { message?: string }).message ?? res.statusText)
   }
+
   return res.blob()
 }
 
@@ -235,6 +266,7 @@ export const api = {
     }): Promise<TokenResponse | ConflictResponse> => {
       const res = await fetch(`${BASE}/auth/register`, {
         method: "POST",
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
       })
@@ -256,13 +288,11 @@ export const api = {
       code?: string
       reauth?: boolean
     }): Promise<TokenResponse | ConflictResponse> => {
-      const token =
-        typeof window !== "undefined" ? localStorage.getItem("access_token") : null
       const res = await fetch(`${BASE}/auth/guest`, {
         method: "POST",
+        credentials: "include",
         headers: {
           "Content-Type": "application/json",
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
         body: JSON.stringify(body),
       })
@@ -305,12 +335,11 @@ export const api = {
       email: string
       code: string
     }): Promise<TokenResponse | { conflict: "email_mismatch" }> => {
-      const token = typeof window !== "undefined" ? localStorage.getItem("access_token") : null
       const res = await fetch(`${BASE}/auth/claim-nickname`, {
         method: "POST",
+        credentials: "include",
         headers: {
           "Content-Type": "application/json",
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
         body: JSON.stringify(body),
       })
@@ -321,6 +350,10 @@ export const api = {
       }
       return res.json()
     },
+    logout: () =>
+      request<{ message: string }>("/auth/logout", {
+        method: "POST",
+      }),
   },
   me: {
     get: () => request<UserInfo>("/me"),
@@ -529,14 +562,4 @@ export const api = {
         body: JSON.stringify({ session_id: sessionId, items }),
       }),
   },
-}
-
-export function saveTokens(access: string, refresh: string) {
-  localStorage.setItem("access_token", access)
-  localStorage.setItem("refresh_token", refresh)
-}
-
-export function clearTokens() {
-  localStorage.removeItem("access_token")
-  localStorage.removeItem("refresh_token")
 }

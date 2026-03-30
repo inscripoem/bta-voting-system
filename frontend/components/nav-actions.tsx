@@ -4,7 +4,7 @@ import { useEffect, Suspense } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { User } from "lucide-react"
-import { clearTokens } from "@/lib/api"
+import { api } from "@/lib/api"
 import { Button } from "@/components/ui/button"
 import { navigationMenuTriggerStyle } from "@/components/ui/navigation-menu"
 import {
@@ -30,11 +30,16 @@ export function NavActions() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  const handleLogout = () => {
-    clearTokens()
-    clear()
-    useVoteStore.getState().reset()
-    router.push("/auth/login")
+  const handleLogout = async () => {
+    try {
+      await api.auth.logout()
+    } catch (err) {
+      console.error("Logout failed:", err)
+    } finally {
+      clear()
+      useVoteStore.getState().reset()
+      router.push("/auth/login")
+    }
   }
 
   if (loading) return null

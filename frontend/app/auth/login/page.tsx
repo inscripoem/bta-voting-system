@@ -2,7 +2,7 @@
 
 import { useState, Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
-import { api, saveTokens } from "@/lib/api"
+import { api } from "@/lib/api"
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
@@ -25,8 +25,7 @@ function LoginForm() {
     setLoading(true)
 
     try {
-      const res = await api.auth.login(email, password)
-      saveTokens(res.access_token, res.refresh_token)
+      await api.auth.login(email, password)
       window.location.href = next
     } catch (err) {
       setError(err instanceof Error ? err.message : "登录失败")
