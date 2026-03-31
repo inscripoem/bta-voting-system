@@ -59,8 +59,6 @@ func (h *AuthHandler) Guest(c echo.Context) error {
 			return c.JSON(http.StatusConflict, map[string]any{"conflict": "same_school", "is_guest": true})
 		case service.ErrNicknameConflictSameSchoolFormal:
 			return c.JSON(http.StatusConflict, map[string]any{"conflict": "same_school", "is_guest": false})
-		case service.ErrNicknameConflictDifferentSchool:
-			return c.JSON(http.StatusConflict, map[string]any{"conflict": "different_school"})
 		case service.ErrWrongAnswer:
 			return echo.NewHTTPError(http.StatusUnauthorized, "wrong answer")
 		case service.ErrInvalidCode:
@@ -71,6 +69,8 @@ func (h *AuthHandler) Guest(c echo.Context) error {
 			return echo.NewHTTPError(http.StatusBadRequest, "email suffix not allowed for this school")
 		case service.ErrSchoolNotFound:
 			return echo.NewHTTPError(http.StatusNotFound, "school not found")
+		case service.ErrVerificationQuestionMisconfigured:
+			return echo.NewHTTPError(http.StatusInternalServerError, "verification question misconfigured")
 		default:
 			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 		}
@@ -206,8 +206,6 @@ func (h *AuthHandler) RegisterDirect(c echo.Context) error {
 			return c.JSON(http.StatusConflict, map[string]any{"conflict": "same_school", "is_guest": true})
 		case service.ErrNicknameConflictSameSchoolFormal:
 			return c.JSON(http.StatusConflict, map[string]any{"conflict": "same_school", "is_guest": false})
-		case service.ErrNicknameConflictDifferentSchool:
-			return c.JSON(http.StatusConflict, map[string]any{"conflict": "different_school"})
 		case service.ErrWrongAnswer:
 			return echo.NewHTTPError(http.StatusUnauthorized, "wrong answer")
 		case service.ErrInvalidCode:
@@ -220,6 +218,8 @@ func (h *AuthHandler) RegisterDirect(c echo.Context) error {
 			return echo.NewHTTPError(http.StatusBadRequest, "email suffix not allowed for this school")
 		case service.ErrSchoolNotFound:
 			return echo.NewHTTPError(http.StatusNotFound, "school not found")
+		case service.ErrVerificationQuestionMisconfigured:
+			return echo.NewHTTPError(http.StatusInternalServerError, "verification question misconfigured")
 		default:
 			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 		}
@@ -232,8 +232,9 @@ func (h *AuthHandler) RegisterDirect(c echo.Context) error {
 }
 
 type loginRequest struct {
-	Email    string `json:"email"`
-	Password string `json:"password"`
+	Identifier string `json:"identifier"` // email or nickname
+	Password   string `json:"password"`
+	SchoolCode string `json:"school_code"` // required if identifier is nickname
 }
 
 func (h *AuthHandler) Login(c echo.Context) error {
@@ -241,7 +242,7 @@ func (h *AuthHandler) Login(c echo.Context) error {
 	if err := c.Bind(&req); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
-	access, refresh, err := h.auth.Login(c.Request().Context(), req.Email, req.Password)
+	access, refresh, err := h.auth.LoginWithIdentifier(c.Request().Context(), req.Identifier, req.Password, req.SchoolCode)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusUnauthorized, "invalid credentials")
 	}
@@ -327,7 +328,7 @@ func (h *AuthHandler) Upgrade(c echo.Context) error {
 		schoolID = &sid
 	}
 
-	access, err := h.auth.JWT().GenerateAccess(updatedUser.ID, updatedUser.Role, schoolID, false)
+	access, err := h.auth.JWT().GenerateAccess(updatedUser.ID, string(updatedUser.Role), schoolID, false)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to generate access token")
 	}
@@ -425,7 +426,7 @@ func (h *AuthHandler) Refresh(c echo.Context) error {
 		schoolID = &sid
 	}
 
-	access, err := h.auth.JWT().GenerateAccess(user.ID, user.Role, schoolID, user.IsGuest)
+	access, err := h.auth.JWT().GenerateAccess(user.ID, string(user.Role), schoolID, user.IsGuest)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to generate access token")
 	}
