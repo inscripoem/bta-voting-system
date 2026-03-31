@@ -38,8 +38,30 @@ async function fetchWithRefresh(path: string, init?: RequestInit): Promise<Respo
           isRefreshing = false
           refreshPromise = null
           if (!window.location.pathname.startsWith("/auth/")) {
-            const next = encodeURIComponent(window.location.pathname + window.location.search)
-            window.location.href = `/auth/login?next=${next}`
+            // Check if it was a guest session from localStorage
+            let isGuest = false
+            try {
+              const storage = localStorage.getItem("bta-vote-storage")
+              if (storage) {
+                const state = JSON.parse(storage).state
+                // If it was a guest who had verified or was voting
+                if (state.step === "vote" || state.step === "register") {
+                  isGuest = true
+                }
+              }
+            } catch (e) {
+              console.error("Failed to parse vote storage", e)
+            }
+
+            if (isGuest) {
+              // Redirect back to verification flow
+              // We need the school code to go back to verification
+              window.location.href = window.location.pathname // Reload or keep on same page
+              // Note: SessionVotePage will handle the redirection to 'verify' if not logged in
+            } else {
+              const next = encodeURIComponent(window.location.pathname + window.location.search)
+              window.location.href = `/auth/login?next=${next}`
+            }
           }
           throw new APIError(401, "Unauthorized")
         })
@@ -305,10 +327,14 @@ export const api = {
       }
       return res.json() as Promise<TokenResponse>
     },
-    login: (email: string, password: string) =>
+    login: (identifier: string, password: string, schoolCode?: string) =>
       request<TokenResponse>("/auth/login", {
         method: "POST",
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({
+          identifier,
+          password,
+          ...(schoolCode ? { school_code: schoolCode } : {})
+        }),
       }),
     upgrade: (password: string) =>
       request<{ message: string }>("/auth/upgrade", {

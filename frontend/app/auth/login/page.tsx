@@ -1,31 +1,46 @@
 "use client"
 
-import { useState, Suspense } from "react"
+import { useState, Suspense, useEffect } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
-import { api } from "@/lib/api"
+import { api, School } from "@/lib/api"
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
 function LoginForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const next = searchParams.get("next") ?? "/"
-  
-  const [email, setEmail] = useState("")
+
+  const [identifier, setIdentifier] = useState("")
   const [password, setPassword] = useState("")
+  const [schoolCode, setSchoolCode] = useState("")
+  const [schools, setSchools] = useState<School[]>([])
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
+
+  const looksLikeEmail = identifier.includes("@")
+
+  useEffect(() => {
+    api.schools.list().then(setSchools).catch(console.error)
+  }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
+
+    if (!looksLikeEmail && !schoolCode) {
+      setError("使用昵称登录时请选择学校")
+      return
+    }
+
     setLoading(true)
 
     try {
-      await api.auth.login(email, password)
+      await api.auth.login(identifier, password, looksLikeEmail ? undefined : schoolCode)
       window.location.href = next
     } catch (err) {
       setError(err instanceof Error ? err.message : "登录失败")
@@ -39,7 +54,7 @@ function LoginForm() {
       <CardHeader className="space-y-1 text-center">
         <CardTitle className="text-2xl font-bold">登录</CardTitle>
         <CardDescription>
-          请输入您的邮箱和密码进行登录
+          请输入您的邮箱或昵称和密码进行登录
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -50,16 +65,33 @@ function LoginForm() {
             </Alert>
           )}
           <div className="space-y-2">
-            <Label htmlFor="email">邮箱</Label>
+            <Label htmlFor="identifier">邮箱或昵称</Label>
             <Input
-              id="email"
-              type="email"
-              placeholder="your@edu.cn"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              id="identifier"
+              type="text"
+              placeholder="请输入邮箱或昵称"
+              value={identifier}
+              onChange={(e) => setIdentifier(e.target.value)}
               required
             />
           </div>
+          {!looksLikeEmail && identifier && (
+            <div className="space-y-2">
+              <Label htmlFor="school">学校</Label>
+              <Select value={schoolCode} onValueChange={setSchoolCode} required>
+                <SelectTrigger id="school">
+                  <SelectValue placeholder="请选择学校" />
+                </SelectTrigger>
+                <SelectContent>
+                  {schools.map((school) => (
+                    <SelectItem key={school.id} value={school.code}>
+                      {school.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
           <div className="space-y-2">
             <Label htmlFor="password">密码</Label>
             <Input

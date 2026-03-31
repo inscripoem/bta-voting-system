@@ -1,6 +1,7 @@
 "use client"
 
 import { create } from "zustand"
+import { persist } from "zustand/middleware"
 import { School, SchoolDetail, VotingSession } from "@/lib/api"
 
 export type VoteStep = "select-school" | "nickname" | "verify" | "register" | "vote" | "conflict"
@@ -24,26 +25,9 @@ interface VoteStore {
   reset: () => void
 }
 
-export const useVoteStore = create<VoteStore>((set) => ({
-  step: "select-school",
-  school: null,
-  schoolDetail: null,
-  session: null,
-  conflictType: null,
-  conflictIsGuest: false,
-  pendingNickname: "",
-  verifiedEmail: null,
-  verificationMethod: null,
-  setSchool: (school, schoolDetail) => set({ school, schoolDetail }),
-  setSession: (session) => set({ session }),
-  goTo: (step) => set({ step }),
-  setNickname: (pendingNickname) => set({ pendingNickname }),
-  setConflict: (conflictType, pendingNickname, isGuest) =>
-    set({ conflictType, pendingNickname, conflictIsGuest: isGuest ?? false, step: "conflict" }),
-  setVerificationResult: (verificationMethod, verifiedEmail) =>
-    set({ verificationMethod, verifiedEmail }),
-  reset: () =>
-    set({
+export const useVoteStore = create<VoteStore>()(
+  persist(
+    (set) => ({
       step: "select-school",
       school: null,
       schoolDetail: null,
@@ -53,5 +37,40 @@ export const useVoteStore = create<VoteStore>((set) => ({
       pendingNickname: "",
       verifiedEmail: null,
       verificationMethod: null,
+      setSchool: (school, schoolDetail) => set({ school, schoolDetail }),
+      setSession: (session) => set({ session }),
+      goTo: (step) => set({ step }),
+      setNickname: (pendingNickname) => set({ pendingNickname }),
+      setConflict: (conflictType, pendingNickname, isGuest) =>
+        set({ conflictType, pendingNickname, conflictIsGuest: isGuest ?? false, step: "conflict" }),
+      setVerificationResult: (verificationMethod, verifiedEmail) =>
+        set({ verificationMethod, verifiedEmail }),
+      reset: () =>
+        set({
+          step: "select-school",
+          school: null,
+          schoolDetail: null,
+          session: null,
+          conflictType: null,
+          conflictIsGuest: false,
+          pendingNickname: "",
+          verifiedEmail: null,
+          verificationMethod: null,
+        }),
     }),
-}))
+    {
+      name: "bta-vote-storage",
+      partialize: (state) => ({
+        step: state.step,
+        school: state.school,
+        schoolDetail: state.schoolDetail,
+        session: state.session,
+        conflictType: state.conflictType,
+        conflictIsGuest: state.conflictIsGuest,
+        pendingNickname: state.pendingNickname,
+        verifiedEmail: state.verifiedEmail,
+        verificationMethod: state.verificationMethod,
+      }),
+    }
+  )
+)
