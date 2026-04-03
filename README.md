@@ -5,30 +5,35 @@
 ## 架构
 
 ```
-frontend/   Next.js 15（部署至 Vercel）
-backend/    Go 1.24 + Echo（自托管 Docker）
+frontend/   Next.js 16（部署至 Vercel）
+backend/    Go 1.25 + Echo（自托管 Docker）
             PostgreSQL（数据库）
 ```
 
-- **前端**：Next.js 15 App Router，Bun 包管理器
+- **前端**：Next.js 16 App Router，Bun 包管理器
 - **后端**：Go + Echo，JWT 双 Token 认证，邮件支持 Resend 或 SMTP，文件上传支持本地文件存储
-- **数据库**：PostgreSQL，迁移通过 `cmd/migrate` 管理
+- **数据库**：PostgreSQL，启动时自动迁移（Ent Schema）
 
 ## Monorepo 结构
 
 ```
 bta-voting-system/
-├── frontend/          # Next.js 前端
-├── backend/           # Go 后端
-├── docker-compose.yml # 一键启动（含数据库）
-└── docs/              # 设计文档
+├── frontend/              # Next.js 前端
+├── backend/               # Go 后端
+├── openspec/              # OpenSpec 需求规范
+├── docs/                  # 设计文档
+├── data/                  # 生产环境数据目录（不提交到 Git）
+│   ├── postgres/          # PostgreSQL 数据库文件
+│   └── uploads/           # 用户上传的文件
+├── docker-compose.yml     # 开发环境（仅数据库）
+└── docker-compose.prod.yml # 生产环境（后端 + 数据库）
 ```
 
 ## 前置依赖
 
 | 工具 | 版本要求 |
 |------|---------|
-| Go | 1.24+ |
+| Go | 1.25+ |
 | Bun | 最新稳定版 |
 | Docker Compose | v2+ |
 
@@ -41,10 +46,12 @@ bta-voting-system/
 ```bash
 cp backend/.env.example backend/.env
 # 编辑 backend/.env，填写必填项（见下方环境变量说明）
+# 生成 JWT 密钥（可选，使用 task 命令）
+task gen:jwt-secrets  # 复制输出到 .env 文件
+
 cd backend
 go mod tidy
-go run ./cmd/migrate
-go run ./cmd/server
+go run ./cmd/server  # 启动时自动执行数据库迁移
 ```
 
 **前端**
@@ -56,25 +63,28 @@ bun install
 bun run dev
 ```
 
-### 方式二：Docker Compose（含数据库）
+### 方式二：Docker Compose（开发环境）
 
-> **注意**：`docker-compose.yml` 仅包含 `db` 和 `backend` 服务，不含前端容器。
-
-```bash
-cp backend/.env.example backend/.env
-# 编辑 backend/.env
-docker compose up --build -d
-
-# 数据库迁移（需在本地单独运行，Dockerfile 仅编译 server 二进制）
-cd backend && go run ./cmd/migrate
-```
-
-后端 API 在 `http://localhost:8080/api/v1`。前端需单独启动：
+> **注意**：`docker-compose.yml` 仅包含 `db` 服务，后端和前端需单独启动。
 
 ```bash
+# 启动数据库
+docker compose up -d
+
+# 启动后端（会自动执行数据库迁移）
+cd backend
+cp .env.example .env
+# 编辑 .env
+go run ./cmd/server
+
+# 启动前端
 cd frontend
+cp .env.example .env.local
+bun install
 bun run dev
 ```
+
+后端 API 在 `http://localhost:8080/api/v1`，前端在 `http://localhost:3000`。
 
 ## 环境变量
 
@@ -94,7 +104,12 @@ bun run dev
 | `BLOB_PROVIDER` | 文件存储方式：`file`（本地） | 是 |
 | `BLOB_FILE_PATH` | 本地文件存储路径，默认 `./uploads` | 是 |
 | `SERVER_PORT` | 后端监听端口，默认 `8080` | 是 |
-| `FRONTEND_URL` | 前端地址，用于邮件链接跳转，默认 `http://localhost:3000` | 是 |
+| `FRONTEND_URL` | 前端地址，用于 CORS 白名单和邮件链接，默认 `http://localhost:3000` | 是 |
+| `BACKEND_BASE_URL` | 后端基础 URL，用于生成静态资源完整 URL，默认 `http://localhost:8080` | 是 |
+| `UPLOAD_DIR` | 静态文件上传目录，默认 `./uploads` | 是 |
+| `COOKIE_SECURE` | Cookie Secure 属性（HTTPS-only），默认 `false`，生产环境设为 `true` | 否 |
+| `COOKIE_SAMESITE` | Cookie SameSite 属性，默认 `Lax`，可选 `Strict`/`None` | 否 |
+| `COOKIE_DOMAIN` | Cookie Domain 属性，跨子域共享时设置，默认为空 | 否 |
 
 ### 前端（`frontend/.env.local`）
 
@@ -102,12 +117,27 @@ bun run dev
 |------|------|
 | `NEXT_PUBLIC_API_URL` | 后端 API 基础 URL，例：`http://localhost:8080/api/v1` |
 
+## 生产部署
+
+本项目采用混合部署架构：
+- **前端**：部署到 Vercel（自动 HTTPS、全球 CDN）
+- **后端 + 数据库**：Docker Compose 部署到你的服务器
+
+详细的生产部署流程请参考 [DEPLOYMENT.md](./DEPLOYMENT.md)，包括：
+- 后端 Docker Compose 配置
+- Vercel 前端部署配置
+- 环境变量配置指南
+- 首次启动获取 super_admin 密码
+- 数据备份与恢复
+- 常见问题排查
+
 ## 主要用户流程
 
 - **Path A（验证题）**：选择学校 → 回答验证题 → 创建 guest 账户 → 进入投票页
-- **Path B（邮箱验证）**：选择学校 → 填写学校邮箱 → 收验证邮件 → 创建 guest 账户 → 进入投票页
-- **账户升级**：guest 用户通过邮件验证后设置密码，升级为注册账户
-- **管理后台**：管理员切换投票会话状态、管理候选项；school_admin 可导出本校投票数据 CSV
+- **Path B（邮箱验证）**：选择学校 → 填写学校邮箱 + 验证码 → 创建 guest 账户 → 进入投票页
+- **直接注册**：填写邮箱 + 验证码 + 昵称 + 密码 → 创建正式账户
+- **账户升级**：guest 用户通过邮件验证后设置密码，升级为正式账户
+- **管理后台**：super_admin 管理投票会话、学校、奖项、提名；school_admin 管理本校娱乐奖项和提名，导出本校投票数据 CSV
 
 ## Spec 体系
 
@@ -129,8 +159,8 @@ bun run dev
 
 - [ ] 选择学校 → 验证题验证 → 创建 guest → 进入投票页
 - [ ] 选择学校 → 邮箱验证 → 创建 guest → 进入投票页
-- [ ] 昵称冲突（同学校）→ 显示两个按钮 → 重新验证或返回换昵称
-- [ ] 昵称冲突（不同学校）→ 报错
+- [ ] 昵称冲突（正式用户）→ 显示"前往登录"或"返回换昵称"
+- [ ] 昵称冲突（guest 用户）→ 通过邮箱验证认领
 - [ ] 投票页：mandatory 全部作答，score=1 不超过 max_count
 - [ ] optional 默认展示 3 个，点击展开全部
 - [ ] entertainment 默认展示 3 个，点击展开全部

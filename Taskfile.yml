@@ -41,3 +41,10 @@ tasks:
     desc: 运行后端测试
     dir: '{{.BACKEND_DIR}}'
     cmd: go test ./...
+
+  gen:jwt-secrets:
+    desc: 生成 JWT 密钥（用于 .env 配置）
+    cmds:
+      - echo "JWT_SECRET=$(openssl rand -hex 32)"
+      - echo "JWT_REFRESH_SECRET=$(openssl rand -hex 32)"
+    silent: false

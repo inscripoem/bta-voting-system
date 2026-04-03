@@ -18,6 +18,7 @@ frontend/.env
 
 # Docker
 uploads/
+data/
 
 # IDE
 .idea/
