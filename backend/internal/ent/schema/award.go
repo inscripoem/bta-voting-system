@@ -9,9 +9,11 @@ import (
 )
 
 // ScoreConfig is stored as JSON in award.score_config
+// ScoreLabels maps a score (as string key, e.g. "1") to its display label
+// (e.g. "支持"); the allowed scores for an award are exactly its keys.
 type ScoreConfig struct {
-	AllowedScores []int          `json:"allowed_scores"`
-	MaxCount      map[string]int `json:"max_count"`
+	ScoreLabels map[string]string `json:"score_labels"`
+	MaxCount    map[string]int    `json:"max_count"`
 }
 
 type Award struct {

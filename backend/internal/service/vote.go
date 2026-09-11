@@ -79,7 +79,7 @@ func (s *VoteService) UpsertItems(ctx context.Context, userID, sessionID, school
 
 		cfg := award.ScoreConfig
 
-		if !scoreAllowed(it.Score, cfg.AllowedScores) {
+		if !scoreAllowed(it.Score, allowedScores(cfg.ScoreLabels)) {
 			return ErrInvalidScore
 		}
 
@@ -232,4 +232,16 @@ func scoreAllowed(score int, allowed []int) bool {
 		}
 	}
 	return false
+}
+
+// allowedScores derives the allowed numeric scores from a score→label map.
+// Keys that are not valid integers are ignored.
+func allowedScores(labels map[string]string) []int {
+	out := make([]int, 0, len(labels))
+	for k := range labels {
+		if sc, err := strconv.Atoi(k); err == nil {
+			out = append(out, sc)
+		}
+	}
+	return out
 }

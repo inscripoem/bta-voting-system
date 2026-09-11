@@ -11,21 +11,35 @@ interface Props {
   onVote: (nomineeId: string, score: number) => void
 }
 
-const SCORE_LABELS: Record<number, string> = {
-  1: "支持",
-  0: "没看过",
-  [-1]: "不支持",
-}
-
 const SCORE_ACTIVE: Record<number, string> = {
   1: "border-primary bg-primary/15 text-primary shadow-sm",
   0: "border-muted-foreground/40 bg-muted text-muted-foreground",
   [-1]: "border-destructive/60 bg-destructive/10 text-destructive",
 }
 
+const DEFAULT_LABELS: Record<number, string> = {
+  1: "支持",
+  0: "没看过",
+  [-1]: "不支持",
+}
+
+const DEFAULT_ACTIVE = "border-muted-foreground/40 bg-muted text-muted-foreground"
+
+const FALLBACK_SCORES = [1, 0, -1]
+
 export function AwardCard({ award, votes, onVote }: Props) {
   const maxSupport = award.score_config.max_count["1"] ?? 4
   const supportCount = award.nominees.filter((n) => votes[n.id] === 1).length
+
+  // Vote options come from the award's score_labels config (score -> label);
+  // fall back to the default support/neutral/oppose triple when unconfigured.
+  const configLabels = award.score_config.score_labels
+  const configured = Object.entries(configLabels || {})
+    .map(([score, label]) => ({ score: Number(score), label }))
+    .filter((o) => !isNaN(o.score) && o.label.trim() !== "")
+  const options = configured.length > 0
+    ? configured.sort((a, b) => b.score - a.score)
+    : FALLBACK_SCORES.map((score) => ({ score, label: DEFAULT_LABELS[score] }))
 
   return (
     <div className="space-y-4">
@@ -54,6 +68,7 @@ export function AwardCard({ award, votes, onVote }: Props) {
               nominee={nominee}
               currentVote={current}
               canSupport={canSupport}
+              options={options}
               onVote={onVote}
             />
           )
@@ -75,10 +90,11 @@ interface NomineeCardProps {
   }
   currentVote: number | undefined
   canSupport: boolean
+  options: Array<{ score: number; label: string }>
   onVote: (nomineeId: string, score: number) => void
 }
 
-function NomineeCard({ nominee, currentVote, canSupport, onVote }: NomineeCardProps) {
+function NomineeCard({ nominee, currentVote, canSupport, options, onVote }: NomineeCardProps) {
   const [showInfo, setShowInfo] = useState(false)
   const [isLongPress, setIsLongPress] = useState(false)
   const longPressTimer = useRef<NodeJS.Timeout | null>(null)
@@ -230,7 +246,7 @@ function NomineeCard({ nominee, currentVote, canSupport, onVote }: NomineeCardPr
 
         {/* 投票按钮组 - 竖排 */}
         <div className="flex flex-col gap-1.5">
-          {[1, 0, -1].map((score) => {
+          {options.map(({ score, label }) => {
             const isActive = currentVote === score
             const disabled = score === 1 && !canSupport && !isActive
             return (
@@ -241,12 +257,12 @@ function NomineeCard({ nominee, currentVote, canSupport, onVote }: NomineeCardPr
                 className={cn(
                   "w-full px-2 py-2 text-xs font-medium rounded-md border transition-all active:scale-95",
                   isActive
-                    ? SCORE_ACTIVE[score]
+                    ? (SCORE_ACTIVE[score] ?? DEFAULT_ACTIVE)
                     : "border-border bg-background hover:bg-muted text-foreground hover:border-border/80",
                   disabled && "opacity-40 cursor-not-allowed pointer-events-none grayscale"
                 )}
               >
-                {SCORE_LABELS[score]}
+                {label}
               </button>
             )
           })}

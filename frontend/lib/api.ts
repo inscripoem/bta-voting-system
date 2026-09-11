@@ -13,16 +13,26 @@ async function refreshToken(): Promise<void> {
   }
 }
 
-async function fetchWithRefresh(path: string, init?: RequestInit): Promise<Response> {
+interface RequestOptions extends RequestInit {
+  /**
+   * Whether a failed token refresh (401) should hard-redirect to /auth/login.
+   * Set to false for auth-probe requests like GET /me, where 401 simply means
+   * "not logged in" and the caller handles it. Defaults to true.
+   */
+  redirectOnAuthError?: boolean
+}
+
+async function fetchWithRefresh(path: string, init?: RequestOptions): Promise<Response> {
   const skipRefresh = path.startsWith("/auth/login") ||
                       path.startsWith("/auth/register") ||
                       path.startsWith("/auth/refresh")
+  const { redirectOnAuthError = true, ...rest } = init ?? {}
 
   const res = await fetch(`${BASE}${path}`, {
-    ...init,
+    ...rest,
     credentials: "include",
     headers: {
-      ...(init?.headers ?? {}),
+      ...(rest.headers ?? {}),
     },
   })
 
@@ -37,7 +47,7 @@ async function fetchWithRefresh(path: string, init?: RequestInit): Promise<Respo
         .catch(() => {
           isRefreshing = false
           refreshPromise = null
-          if (!window.location.pathname.startsWith("/auth/")) {
+          if (redirectOnAuthError && !window.location.pathname.startsWith("/auth/")) {
             // Check if it was a guest session from localStorage
             let isGuest = false
             try {
@@ -78,7 +88,7 @@ async function fetchWithRefresh(path: string, init?: RequestInit): Promise<Respo
   return res
 }
 
-async function request<T>(path: string, init?: RequestInit): Promise<T> {
+async function request<T>(path: string, init?: RequestOptions): Promise<T> {
   const res = await fetchWithRefresh(path, {
     ...init,
     headers: {
@@ -139,7 +149,8 @@ export interface VotingSession {
 }
 
 export interface ScoreConfig {
-  allowed_scores: number[]
+  /** score -> display label, e.g. {"1": "support", "0": "haven't seen", "-1": "oppose"}. Keys are the allowed scores */
+  score_labels: Record<string, string>
   max_count: Record<string, number>
 }
 
@@ -382,7 +393,7 @@ export const api = {
       }),
   },
   me: {
-    get: () => request<UserInfo>("/me"),
+    get: () => request<UserInfo>("/me", { redirectOnAuthError: false }),
   },
   admin: {
     patchSessionStatus: (
