@@ -13,6 +13,10 @@ import (
 	"github.com/inscripoem/bta-voting-system/backend/internal/ent/schema"
 )
 
+func defaultScoreLabels() map[string]string {
+	return map[string]string{"1": "支持", "0": "没看过", "-1": "不支持"}
+}
+
 type seedSummary struct {
 	Schools  int
 	Sessions int
@@ -106,8 +110,8 @@ func seedData(ctx context.Context, tx *ent.Tx) (seedSummary, error) {
 		SetName("最佳剧情奖").
 		SetCategory("mandatory").
 		SetScoreConfig(schema.ScoreConfig{
-			AllowedScores: []int{0, 1},
-			MaxCount:      map[string]int{"1": 3},
+			ScoreLabels: defaultScoreLabels(),
+			MaxCount:    map[string]int{"1": 3},
 		}).
 		SetDisplayOrder(1).
 		SetSession(session).
@@ -120,8 +124,8 @@ func seedData(ctx context.Context, tx *ent.Tx) (seedSummary, error) {
 		SetName("最具潜力奖").
 		SetCategory("optional").
 		SetScoreConfig(schema.ScoreConfig{
-			AllowedScores: []int{0, 1},
-			MaxCount:      map[string]int{"1": 2},
+			ScoreLabels: defaultScoreLabels(),
+			MaxCount:    map[string]int{"1": 2},
 		}).
 		SetDisplayOrder(2).
 		SetSession(session).
@@ -134,8 +138,8 @@ func seedData(ctx context.Context, tx *ent.Tx) (seedSummary, error) {
 		SetName("示例大学A娱乐奖").
 		SetCategory("entertainment").
 		SetScoreConfig(schema.ScoreConfig{
-			AllowedScores: []int{0, 1},
-			MaxCount:      map[string]int{"1": 1},
+			ScoreLabels: defaultScoreLabels(),
+			MaxCount:    map[string]int{"1": 1},
 		}).
 		SetDisplayOrder(3).
 		SetSession(session).

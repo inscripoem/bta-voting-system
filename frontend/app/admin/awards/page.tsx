@@ -13,7 +13,7 @@ import { ColumnDef } from "@tanstack/react-table"
 import { api, AwardListItem, NomineeListItem, UserInfo, SessionListItem } from "@/lib/api"
 import { DataTable } from "@/components/admin/data-table"
 import { SearchableSelect } from "@/components/admin/searchable-select"
-import { TagInput } from "@/components/admin/tag-input"
+import { ScoreLabelEditor } from "@/components/admin/score-label-editor"
 import { KVEditor } from "@/components/admin/kv-editor"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -342,7 +342,7 @@ function AwardDialog({
     category: "entertainment" as "mandatory" | "optional" | "entertainment",
     type: "anime" as "anime" | "character" | "staff" | "seiyuu" | "other",
     score_config: {
-      allowed_scores: [1, 2, 3, 4, 5],
+      score_labels: { "1": "支持", "0": "没看过", "-1": "不支持" } as Record<string, string>,
       max_count: {} as Record<string, number>,
     },
     display_order: 0,
@@ -356,7 +356,7 @@ function AwardDialog({
         category: editingAward.category,
         type: editingAward.type || "other",
         score_config: {
-          allowed_scores: editingAward.score_config.allowed_scores,
+          score_labels: editingAward.score_config.score_labels ?? {},
           max_count: editingAward.score_config.max_count,
         },
         display_order: editingAward.display_order,
@@ -368,7 +368,7 @@ function AwardDialog({
         category: user?.role === "school_admin" ? "entertainment" : "mandatory",
         type: "other",
         score_config: {
-          allowed_scores: [1, 2, 3, 4, 5],
+          score_labels: { "1": "支持", "0": "没看过", "-1": "不支持" },
           max_count: {},
         },
         display_order: 0,
@@ -462,18 +462,18 @@ function AwardDialog({
             </div>
 
             <div className="grid gap-2">
-              <Label>允许的分数</Label>
-              <TagInput
-                value={formData.score_config.allowed_scores.map(String)}
-                onChange={(tags) => setFormData({
+              <Label>分值与显示名称</Label>
+              <ScoreLabelEditor
+                value={formData.score_config.score_labels}
+                onChange={(labels) => setFormData({
                   ...formData,
                   score_config: {
                     ...formData.score_config,
-                    allowed_scores: tags.map(Number).filter(n => !isNaN(n))
+                    score_labels: labels
                   }
                 })}
-                placeholder="添加分数 (例如 1)"
               />
+              <p className="text-xs text-muted-foreground">键是分值，值是投票界面按钮上显示的名称。</p>
             </div>
 
             <div className="grid gap-2">

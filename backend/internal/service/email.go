@@ -3,7 +3,9 @@ package service
 import (
 	"crypto/tls"
 	"fmt"
+	"mime"
 	"net/smtp"
+	"strings"
 
 	resend "github.com/resend/resend-go/v2"
 	"github.com/inscripoem/bta-voting-system/backend/internal/config"
@@ -49,23 +51,41 @@ type SMTPSender struct {
 	user      string
 	pass      string
 	fromEmail string
+	fromName  string
 }
 
+// NewSMTPSender creates an SMTP sender. cfg.EmailFrom may be either a bare
+// address ("a@b.com") or "显示名 <a@b.com>"; the display name is only used
+// in the From header, never in the envelope (MAIL FROM).
 func NewSMTPSender(cfg *config.Config) *SMTPSender {
+	from := cfg.EmailFrom
+	name := ""
+	if i := strings.Index(from, "<"); i >= 0 && strings.HasSuffix(from, ">") {
+		name = strings.TrimSpace(from[:i])
+		from = strings.TrimSpace(from[i+1 : len(from)-1])
+	}
 	return &SMTPSender{
 		host:      cfg.SMTPHost,
 		port:      cfg.SMTPPort,
 		user:      cfg.SMTPUser,
 		pass:      cfg.SMTPPass,
-		fromEmail: cfg.EmailFrom,
+		fromEmail: from,
+		fromName:  name,
 	}
+}
+
+func (s *SMTPSender) fromHeader() string {
+	if s.fromName == "" {
+		return s.fromEmail
+	}
+	return fmt.Sprintf("%s <%s>", mime.QEncoding.Encode("UTF-8", s.fromName), s.fromEmail)
 }
 
 func (s *SMTPSender) send(to, subject, body string) error {
 	auth := smtp.PlainAuth("", s.user, s.pass, s.host)
 	msg := fmt.Sprintf(
 		"From: %s\r\nTo: %s\r\nSubject: %s\r\nContent-Type: text/html; charset=UTF-8\r\n\r\n%s",
-		s.fromEmail, to, subject, body,
+		s.fromHeader(), to, subject, body,
 	)
 	addr := fmt.Sprintf("%s:%d", s.host, s.port)
 	tlsCfg := &tls.Config{ServerName: s.host}
