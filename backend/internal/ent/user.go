@@ -33,6 +33,10 @@ type User struct {
 	Role user.Role `json:"role,omitempty"`
 	// IsGuest holds the value of the "is_guest" field.
 	IsGuest bool `json:"is_guest,omitempty"`
+	// ExternalProvider holds the value of the "external_provider" field.
+	ExternalProvider *string `json:"external_provider,omitempty"`
+	// ExternalID holds the value of the "external_id" field.
+	ExternalID *string `json:"external_id,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the UserQuery when eager-loading is set.
 	Edges        UserEdges `json:"edges"`
@@ -78,7 +82,7 @@ func (*User) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case user.FieldIsGuest:
 			values[i] = new(sql.NullBool)
-		case user.FieldNickname, user.FieldEmail, user.FieldPasswordHash, user.FieldRole:
+		case user.FieldNickname, user.FieldEmail, user.FieldPasswordHash, user.FieldRole, user.FieldExternalProvider, user.FieldExternalID:
 			values[i] = new(sql.NullString)
 		case user.FieldCreatedAt, user.FieldUpdatedAt:
 			values[i] = new(sql.NullTime)
@@ -150,6 +154,20 @@ func (_m *User) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field is_guest", values[i])
 			} else if value.Valid {
 				_m.IsGuest = value.Bool
+			}
+		case user.FieldExternalProvider:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field external_provider", values[i])
+			} else if value.Valid {
+				_m.ExternalProvider = new(string)
+				*_m.ExternalProvider = value.String
+			}
+		case user.FieldExternalID:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field external_id", values[i])
+			} else if value.Valid {
+				_m.ExternalID = new(string)
+				*_m.ExternalID = value.String
 			}
 		case user.ForeignKeys[0]:
 			if value, ok := values[i].(*sql.NullScanner); !ok {
@@ -225,6 +243,16 @@ func (_m *User) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("is_guest=")
 	builder.WriteString(fmt.Sprintf("%v", _m.IsGuest))
+	builder.WriteString(", ")
+	if v := _m.ExternalProvider; v != nil {
+		builder.WriteString("external_provider=")
+		builder.WriteString(*v)
+	}
+	builder.WriteString(", ")
+	if v := _m.ExternalID; v != nil {
+		builder.WriteString("external_id=")
+		builder.WriteString(*v)
+	}
 	builder.WriteByte(')')
 	return builder.String()
 }

@@ -76,8 +76,8 @@ func (h *AuthHandler) Guest(c echo.Context) error {
 		}
 	}
 
-	h.setCookie(c, "access_token", access, 900, "/")
-	h.setCookie(c, "refresh_token", refresh, 604800, "/api/v1/auth")
+	setAuthCookie(c, h.cfg, "access_token", access, 900, "/")
+	setAuthCookie(c, h.cfg, "refresh_token", refresh, 604800, "/api/v1/auth")
 
 	return c.JSON(http.StatusOK, map[string]string{"message": "success"})
 }
@@ -136,8 +136,8 @@ func (h *AuthHandler) ClaimNickname(c echo.Context) error {
 		}
 	}
 
-	h.setCookie(c, "access_token", access, 900, "/")
-	h.setCookie(c, "refresh_token", refresh, 604800, "/api/v1/auth")
+	setAuthCookie(c, h.cfg, "access_token", access, 900, "/")
+	setAuthCookie(c, h.cfg, "refresh_token", refresh, 604800, "/api/v1/auth")
 
 	return c.JSON(http.StatusOK, map[string]string{"message": "success"})
 }
@@ -225,8 +225,8 @@ func (h *AuthHandler) RegisterDirect(c echo.Context) error {
 		}
 	}
 
-	h.setCookie(c, "access_token", access, 900, "/")
-	h.setCookie(c, "refresh_token", refresh, 604800, "/api/v1/auth")
+	setAuthCookie(c, h.cfg, "access_token", access, 900, "/")
+	setAuthCookie(c, h.cfg, "refresh_token", refresh, 604800, "/api/v1/auth")
 
 	return c.JSON(http.StatusOK, map[string]string{"message": "success"})
 }
@@ -247,8 +247,8 @@ func (h *AuthHandler) Login(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusUnauthorized, "invalid credentials")
 	}
 
-	h.setCookie(c, "access_token", access, 900, "/")
-	h.setCookie(c, "refresh_token", refresh, 604800, "/api/v1/auth")
+	setAuthCookie(c, h.cfg, "access_token", access, 900, "/")
+	setAuthCookie(c, h.cfg, "refresh_token", refresh, 604800, "/api/v1/auth")
 
 	return c.JSON(http.StatusOK, map[string]string{"message": "success"})
 }
@@ -333,7 +333,7 @@ func (h *AuthHandler) Upgrade(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to generate access token")
 	}
 
-	h.setCookie(c, "access_token", access, 900, "/")
+	setAuthCookie(c, h.cfg, "access_token", access, 900, "/")
 
 	return c.JSON(http.StatusOK, map[string]string{"message": "账户升级成功"})
 }
@@ -356,49 +356,6 @@ func (h *AuthHandler) VerifyEmail(c echo.Context) error {
 	}
 
 	return c.JSON(http.StatusOK, map[string]string{"message": "邮箱验证成功"})
-}
-
-func (h *AuthHandler) setCookie(c echo.Context, name, value string, maxAge int, path string) {
-	cookie := &http.Cookie{
-		Name:     name,
-		Value:    value,
-		Path:     path,
-		MaxAge:   maxAge,
-		HttpOnly: true,
-		Secure:   h.cfg.CookieSecure,
-		SameSite: parseSameSite(h.cfg.CookieSameSite),
-	}
-	if h.cfg.CookieDomain != "" {
-		cookie.Domain = h.cfg.CookieDomain
-	}
-	c.SetCookie(cookie)
-}
-
-func (h *AuthHandler) clearCookie(c echo.Context, name string, path string) {
-	cookie := &http.Cookie{
-		Name:     name,
-		Value:    "",
-		Path:     path,
-		MaxAge:   -1,
-		HttpOnly: true,
-		Secure:   h.cfg.CookieSecure,
-		SameSite: parseSameSite(h.cfg.CookieSameSite),
-	}
-	if h.cfg.CookieDomain != "" {
-		cookie.Domain = h.cfg.CookieDomain
-	}
-	c.SetCookie(cookie)
-}
-
-func parseSameSite(s string) http.SameSite {
-	switch s {
-	case "Strict":
-		return http.SameSiteStrictMode
-	case "None":
-		return http.SameSiteNoneMode
-	default:
-		return http.SameSiteLaxMode
-	}
 }
 
 func (h *AuthHandler) Refresh(c echo.Context) error {
@@ -436,14 +393,14 @@ func (h *AuthHandler) Refresh(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to generate refresh token")
 	}
 
-	h.setCookie(c, "access_token", access, 900, "/")
-	h.setCookie(c, "refresh_token", refresh, 604800, "/api/v1/auth")
+	setAuthCookie(c, h.cfg, "access_token", access, 900, "/")
+	setAuthCookie(c, h.cfg, "refresh_token", refresh, 604800, "/api/v1/auth")
 
 	return c.JSON(http.StatusOK, map[string]string{"message": "refreshed"})
 }
 
 func (h *AuthHandler) Logout(c echo.Context) error {
-	h.clearCookie(c, "access_token", "/")
-	h.clearCookie(c, "refresh_token", "/api/v1/auth")
+	clearAuthCookie(c, h.cfg, "access_token", "/")
+	clearAuthCookie(c, h.cfg, "refresh_token", "/api/v1/auth")
 	return c.JSON(http.StatusOK, map[string]string{"message": "logged out"})
 }

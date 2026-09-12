@@ -26,6 +26,10 @@ type Config struct {
 	CookieSecure     bool   // HTTPS-only cookie flag
 	CookieSameSite   string // SameSite attribute: "Lax", "Strict", or "None"
 	CookieDomain     string // Cookie domain (empty for default)
+	// SSO (cac-website token exchange). Empty secret disables the endpoints.
+	SSOCACAppID      string // expected "iss" of incoming assertions
+	SSOCACSecret     string // pre-shared HS256 secret for assertion verification
+	SSODefaultSchool string // school name assigned to SSO-created users
 }
 
 func Load() (*Config, error) {
@@ -51,6 +55,9 @@ func Load() (*Config, error) {
 		CookieSecure:     cookieSecure,
 		CookieSameSite:   getEnv("COOKIE_SAMESITE", "Lax"),
 		CookieDomain:     getEnv("COOKIE_DOMAIN", ""),
+		SSOCACAppID:      getEnv("SSO_CAC_APP_ID", "cac_website"),
+		SSOCACSecret:     getEnv("SSO_CAC_SECRET", ""),
+		SSODefaultSchool: getEnv("SSO_DEFAULT_SCHOOL", "南京大学"),
 	}
 	return c, nil
 }

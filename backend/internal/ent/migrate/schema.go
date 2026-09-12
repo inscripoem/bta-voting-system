@@ -93,11 +93,13 @@ var (
 		{Name: "id", Type: field.TypeUUID},
 		{Name: "created_at", Type: field.TypeTime},
 		{Name: "updated_at", Type: field.TypeTime},
-		{Name: "nickname", Type: field.TypeString, Unique: true},
+		{Name: "nickname", Type: field.TypeString},
 		{Name: "email", Type: field.TypeString, Nullable: true},
 		{Name: "password_hash", Type: field.TypeString, Nullable: true},
 		{Name: "role", Type: field.TypeEnum, Enums: []string{"voter", "school_admin", "super_admin"}, Default: "voter"},
 		{Name: "is_guest", Type: field.TypeBool, Default: true},
+		{Name: "external_provider", Type: field.TypeString, Nullable: true},
+		{Name: "external_id", Type: field.TypeString, Nullable: true},
 		{Name: "school_users", Type: field.TypeUUID, Nullable: true},
 	}
 	// UsersTable holds the schema information for the "users" table.
@@ -108,9 +110,21 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "users_schools_users",
-				Columns:    []*schema.Column{UsersColumns[8]},
+				Columns:    []*schema.Column{UsersColumns[10]},
 				RefColumns: []*schema.Column{SchoolsColumns[0]},
 				OnDelete:   schema.SetNull,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "user_nickname_school_users",
+				Unique:  true,
+				Columns: []*schema.Column{UsersColumns[3], UsersColumns[10]},
+			},
+			{
+				Name:    "user_external_provider_external_id",
+				Unique:  true,
+				Columns: []*schema.Column{UsersColumns[8], UsersColumns[9]},
 			},
 		},
 	}

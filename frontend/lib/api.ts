@@ -347,6 +347,31 @@ export const api = {
           ...(schoolCode ? { school_code: schoolCode } : {})
         }),
       }),
+    consumeSsoCode: async (code: string): Promise<{ message: string }> => {
+      const res = await fetch(`${BASE}/auth/external/consume`, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code }),
+      })
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ message: res.statusText }))
+        throw new APIError(res.status, (err as { message?: string }).message ?? res.statusText)
+      }
+      return res.json()
+    },
+    // Peeks at the identity bound to an SSO code without consuming it —
+    // used by the authorize page to show who is about to log in.
+    ssoCodeInfo: async (code: string): Promise<{ nickname: string; external_provider?: string | null }> => {
+      const res = await fetch(`${BASE}/auth/external/code-info?code=${encodeURIComponent(code)}`, {
+        credentials: "include",
+      })
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ message: res.statusText }))
+        throw new APIError(res.status, (err as { message?: string }).message ?? res.statusText)
+      }
+      return res.json()
+    },
     upgrade: (password: string) =>
       request<{ message: string }>("/auth/upgrade", {
         method: "POST",

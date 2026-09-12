@@ -113,6 +113,34 @@ func (_c *UserCreate) SetNillableIsGuest(v *bool) *UserCreate {
 	return _c
 }
 
+// SetExternalProvider sets the "external_provider" field.
+func (_c *UserCreate) SetExternalProvider(v string) *UserCreate {
+	_c.mutation.SetExternalProvider(v)
+	return _c
+}
+
+// SetNillableExternalProvider sets the "external_provider" field if the given value is not nil.
+func (_c *UserCreate) SetNillableExternalProvider(v *string) *UserCreate {
+	if v != nil {
+		_c.SetExternalProvider(*v)
+	}
+	return _c
+}
+
+// SetExternalID sets the "external_id" field.
+func (_c *UserCreate) SetExternalID(v string) *UserCreate {
+	_c.mutation.SetExternalID(v)
+	return _c
+}
+
+// SetNillableExternalID sets the "external_id" field if the given value is not nil.
+func (_c *UserCreate) SetNillableExternalID(v *string) *UserCreate {
+	if v != nil {
+		_c.SetExternalID(*v)
+	}
+	return _c
+}
+
 // SetID sets the "id" field.
 func (_c *UserCreate) SetID(v uuid.UUID) *UserCreate {
 	_c.mutation.SetID(v)
@@ -307,6 +335,14 @@ func (_c *UserCreate) createSpec() (*User, *sqlgraph.CreateSpec) {
 	if value, ok := _c.mutation.IsGuest(); ok {
 		_spec.SetField(user.FieldIsGuest, field.TypeBool, value)
 		_node.IsGuest = value
+	}
+	if value, ok := _c.mutation.ExternalProvider(); ok {
+		_spec.SetField(user.FieldExternalProvider, field.TypeString, value)
+		_node.ExternalProvider = &value
+	}
+	if value, ok := _c.mutation.ExternalID(); ok {
+		_spec.SetField(user.FieldExternalID, field.TypeString, value)
+		_node.ExternalID = &value
 	}
 	if nodes := _c.mutation.SchoolIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{

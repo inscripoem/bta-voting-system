@@ -53,9 +53,11 @@ func main() {
 	emailSvc := service.NewEmailSender(cfg)
 	authSvc := service.NewAuthService(db, jwtSvc, emailSvc)
 	voteSvc := service.NewVoteService(db)
+	ssoSvc := service.NewSSOService(db, cfg)
 
 	// Handlers
 	authH := handler.NewAuthHandler(authSvc, cfg)
+	ssoH := handler.NewSSOHandler(ssoSvc, authSvc, cfg)
 	voteH := handler.NewVoteHandler(voteSvc)
 	schoolH := handler.NewSchoolHandler(db)
 	awardH := handler.NewAwardHandler(db, cfg)
@@ -100,6 +102,9 @@ func main() {
 	v1.POST("/auth/send-code", authH.SendCode)
 	v1.POST("/auth/login", authH.Login)
 	v1.POST("/auth/refresh", authH.Refresh)
+	v1.POST("/oauth/token", ssoH.Token)
+	v1.GET("/auth/external/code-info", ssoH.CodeInfo)
+	v1.POST("/auth/external/consume", ssoH.Consume)
 	v1.POST("/auth/upgrade", authH.Upgrade, jwtMW)
 	v1.POST("/auth/verify-email", authH.VerifyEmail, jwtMW)
 	v1.POST("/auth/logout", authH.Logout, jwtMW)

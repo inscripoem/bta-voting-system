@@ -402,6 +402,11 @@ func (s *AuthService) VerifyEmailCode(ctx context.Context, userID uuid.UUID, ema
 	return nil
 }
 
+// IssueTokens issues access and refresh tokens for an already authenticated user.
+func (s *AuthService) IssueTokens(ctx context.Context, user *ent.User) (access, refresh string, err error) {
+	return s.issueTokens(ctx, user)
+}
+
 func (s *AuthService) issueTokens(ctx context.Context, user *ent.User) (access, refresh string, err error) {
 	school, _ := user.QuerySchool().Only(ctx)
 	var schoolIDPtr *uuid.UUID

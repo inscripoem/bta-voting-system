@@ -3227,6 +3227,8 @@ type UserMutation struct {
 	password_hash     *string
 	role              *user.Role
 	is_guest          *bool
+	external_provider *string
+	external_id       *string
 	clearedFields     map[string]struct{}
 	school            *uuid.UUID
 	clearedschool     bool
@@ -3620,6 +3622,104 @@ func (m *UserMutation) ResetIsGuest() {
 	m.is_guest = nil
 }
 
+// SetExternalProvider sets the "external_provider" field.
+func (m *UserMutation) SetExternalProvider(s string) {
+	m.external_provider = &s
+}
+
+// ExternalProvider returns the value of the "external_provider" field in the mutation.
+func (m *UserMutation) ExternalProvider() (r string, exists bool) {
+	v := m.external_provider
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldExternalProvider returns the old "external_provider" field's value of the User entity.
+// If the User object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *UserMutation) OldExternalProvider(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldExternalProvider is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldExternalProvider requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldExternalProvider: %w", err)
+	}
+	return oldValue.ExternalProvider, nil
+}
+
+// ClearExternalProvider clears the value of the "external_provider" field.
+func (m *UserMutation) ClearExternalProvider() {
+	m.external_provider = nil
+	m.clearedFields[user.FieldExternalProvider] = struct{}{}
+}
+
+// ExternalProviderCleared returns if the "external_provider" field was cleared in this mutation.
+func (m *UserMutation) ExternalProviderCleared() bool {
+	_, ok := m.clearedFields[user.FieldExternalProvider]
+	return ok
+}
+
+// ResetExternalProvider resets all changes to the "external_provider" field.
+func (m *UserMutation) ResetExternalProvider() {
+	m.external_provider = nil
+	delete(m.clearedFields, user.FieldExternalProvider)
+}
+
+// SetExternalID sets the "external_id" field.
+func (m *UserMutation) SetExternalID(s string) {
+	m.external_id = &s
+}
+
+// ExternalID returns the value of the "external_id" field in the mutation.
+func (m *UserMutation) ExternalID() (r string, exists bool) {
+	v := m.external_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldExternalID returns the old "external_id" field's value of the User entity.
+// If the User object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *UserMutation) OldExternalID(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldExternalID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldExternalID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldExternalID: %w", err)
+	}
+	return oldValue.ExternalID, nil
+}
+
+// ClearExternalID clears the value of the "external_id" field.
+func (m *UserMutation) ClearExternalID() {
+	m.external_id = nil
+	m.clearedFields[user.FieldExternalID] = struct{}{}
+}
+
+// ExternalIDCleared returns if the "external_id" field was cleared in this mutation.
+func (m *UserMutation) ExternalIDCleared() bool {
+	_, ok := m.clearedFields[user.FieldExternalID]
+	return ok
+}
+
+// ResetExternalID resets all changes to the "external_id" field.
+func (m *UserMutation) ResetExternalID() {
+	m.external_id = nil
+	delete(m.clearedFields, user.FieldExternalID)
+}
+
 // SetSchoolID sets the "school" edge to the School entity by id.
 func (m *UserMutation) SetSchoolID(id uuid.UUID) {
 	m.school = &id
@@ -3747,7 +3847,7 @@ func (m *UserMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *UserMutation) Fields() []string {
-	fields := make([]string, 0, 7)
+	fields := make([]string, 0, 9)
 	if m.created_at != nil {
 		fields = append(fields, user.FieldCreatedAt)
 	}
@@ -3768,6 +3868,12 @@ func (m *UserMutation) Fields() []string {
 	}
 	if m.is_guest != nil {
 		fields = append(fields, user.FieldIsGuest)
+	}
+	if m.external_provider != nil {
+		fields = append(fields, user.FieldExternalProvider)
+	}
+	if m.external_id != nil {
+		fields = append(fields, user.FieldExternalID)
 	}
 	return fields
 }
@@ -3791,6 +3897,10 @@ func (m *UserMutation) Field(name string) (ent.Value, bool) {
 		return m.Role()
 	case user.FieldIsGuest:
 		return m.IsGuest()
+	case user.FieldExternalProvider:
+		return m.ExternalProvider()
+	case user.FieldExternalID:
+		return m.ExternalID()
 	}
 	return nil, false
 }
@@ -3814,6 +3924,10 @@ func (m *UserMutation) OldField(ctx context.Context, name string) (ent.Value, er
 		return m.OldRole(ctx)
 	case user.FieldIsGuest:
 		return m.OldIsGuest(ctx)
+	case user.FieldExternalProvider:
+		return m.OldExternalProvider(ctx)
+	case user.FieldExternalID:
+		return m.OldExternalID(ctx)
 	}
 	return nil, fmt.Errorf("unknown User field %s", name)
 }
@@ -3872,6 +3986,20 @@ func (m *UserMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetIsGuest(v)
 		return nil
+	case user.FieldExternalProvider:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetExternalProvider(v)
+		return nil
+	case user.FieldExternalID:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetExternalID(v)
+		return nil
 	}
 	return fmt.Errorf("unknown User field %s", name)
 }
@@ -3908,6 +4036,12 @@ func (m *UserMutation) ClearedFields() []string {
 	if m.FieldCleared(user.FieldPasswordHash) {
 		fields = append(fields, user.FieldPasswordHash)
 	}
+	if m.FieldCleared(user.FieldExternalProvider) {
+		fields = append(fields, user.FieldExternalProvider)
+	}
+	if m.FieldCleared(user.FieldExternalID) {
+		fields = append(fields, user.FieldExternalID)
+	}
 	return fields
 }
 
@@ -3927,6 +4061,12 @@ func (m *UserMutation) ClearField(name string) error {
 		return nil
 	case user.FieldPasswordHash:
 		m.ClearPasswordHash()
+		return nil
+	case user.FieldExternalProvider:
+		m.ClearExternalProvider()
+		return nil
+	case user.FieldExternalID:
+		m.ClearExternalID()
 		return nil
 	}
 	return fmt.Errorf("unknown User nullable field %s", name)
@@ -3956,6 +4096,12 @@ func (m *UserMutation) ResetField(name string) error {
 		return nil
 	case user.FieldIsGuest:
 		m.ResetIsGuest()
+		return nil
+	case user.FieldExternalProvider:
+		m.ResetExternalProvider()
+		return nil
+	case user.FieldExternalID:
+		m.ResetExternalID()
 		return nil
 	}
 	return fmt.Errorf("unknown User field %s", name)

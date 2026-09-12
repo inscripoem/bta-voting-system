@@ -119,6 +119,46 @@ func (_u *UserUpdate) SetNillableIsGuest(v *bool) *UserUpdate {
 	return _u
 }
 
+// SetExternalProvider sets the "external_provider" field.
+func (_u *UserUpdate) SetExternalProvider(v string) *UserUpdate {
+	_u.mutation.SetExternalProvider(v)
+	return _u
+}
+
+// SetNillableExternalProvider sets the "external_provider" field if the given value is not nil.
+func (_u *UserUpdate) SetNillableExternalProvider(v *string) *UserUpdate {
+	if v != nil {
+		_u.SetExternalProvider(*v)
+	}
+	return _u
+}
+
+// ClearExternalProvider clears the value of the "external_provider" field.
+func (_u *UserUpdate) ClearExternalProvider() *UserUpdate {
+	_u.mutation.ClearExternalProvider()
+	return _u
+}
+
+// SetExternalID sets the "external_id" field.
+func (_u *UserUpdate) SetExternalID(v string) *UserUpdate {
+	_u.mutation.SetExternalID(v)
+	return _u
+}
+
+// SetNillableExternalID sets the "external_id" field if the given value is not nil.
+func (_u *UserUpdate) SetNillableExternalID(v *string) *UserUpdate {
+	if v != nil {
+		_u.SetExternalID(*v)
+	}
+	return _u
+}
+
+// ClearExternalID clears the value of the "external_id" field.
+func (_u *UserUpdate) ClearExternalID() *UserUpdate {
+	_u.mutation.ClearExternalID()
+	return _u
+}
+
 // SetSchoolID sets the "school" edge to the School entity by ID.
 func (_u *UserUpdate) SetSchoolID(id uuid.UUID) *UserUpdate {
 	_u.mutation.SetSchoolID(id)
@@ -271,6 +311,18 @@ func (_u *UserUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	}
 	if value, ok := _u.mutation.IsGuest(); ok {
 		_spec.SetField(user.FieldIsGuest, field.TypeBool, value)
+	}
+	if value, ok := _u.mutation.ExternalProvider(); ok {
+		_spec.SetField(user.FieldExternalProvider, field.TypeString, value)
+	}
+	if _u.mutation.ExternalProviderCleared() {
+		_spec.ClearField(user.FieldExternalProvider, field.TypeString)
+	}
+	if value, ok := _u.mutation.ExternalID(); ok {
+		_spec.SetField(user.FieldExternalID, field.TypeString, value)
+	}
+	if _u.mutation.ExternalIDCleared() {
+		_spec.ClearField(user.FieldExternalID, field.TypeString)
 	}
 	if _u.mutation.SchoolCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -451,6 +503,46 @@ func (_u *UserUpdateOne) SetNillableIsGuest(v *bool) *UserUpdateOne {
 	if v != nil {
 		_u.SetIsGuest(*v)
 	}
+	return _u
+}
+
+// SetExternalProvider sets the "external_provider" field.
+func (_u *UserUpdateOne) SetExternalProvider(v string) *UserUpdateOne {
+	_u.mutation.SetExternalProvider(v)
+	return _u
+}
+
+// SetNillableExternalProvider sets the "external_provider" field if the given value is not nil.
+func (_u *UserUpdateOne) SetNillableExternalProvider(v *string) *UserUpdateOne {
+	if v != nil {
+		_u.SetExternalProvider(*v)
+	}
+	return _u
+}
+
+// ClearExternalProvider clears the value of the "external_provider" field.
+func (_u *UserUpdateOne) ClearExternalProvider() *UserUpdateOne {
+	_u.mutation.ClearExternalProvider()
+	return _u
+}
+
+// SetExternalID sets the "external_id" field.
+func (_u *UserUpdateOne) SetExternalID(v string) *UserUpdateOne {
+	_u.mutation.SetExternalID(v)
+	return _u
+}
+
+// SetNillableExternalID sets the "external_id" field if the given value is not nil.
+func (_u *UserUpdateOne) SetNillableExternalID(v *string) *UserUpdateOne {
+	if v != nil {
+		_u.SetExternalID(*v)
+	}
+	return _u
+}
+
+// ClearExternalID clears the value of the "external_id" field.
+func (_u *UserUpdateOne) ClearExternalID() *UserUpdateOne {
+	_u.mutation.ClearExternalID()
 	return _u
 }
 
@@ -636,6 +728,18 @@ func (_u *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) {
 	}
 	if value, ok := _u.mutation.IsGuest(); ok {
 		_spec.SetField(user.FieldIsGuest, field.TypeBool, value)
+	}
+	if value, ok := _u.mutation.ExternalProvider(); ok {
+		_spec.SetField(user.FieldExternalProvider, field.TypeString, value)
+	}
+	if _u.mutation.ExternalProviderCleared() {
+		_spec.ClearField(user.FieldExternalProvider, field.TypeString)
+	}
+	if value, ok := _u.mutation.ExternalID(); ok {
+		_spec.SetField(user.FieldExternalID, field.TypeString, value)
+	}
+	if _u.mutation.ExternalIDCleared() {
+		_spec.ClearField(user.FieldExternalID, field.TypeString)
 	}
 	if _u.mutation.SchoolCleared() {
 		edge := &sqlgraph.EdgeSpec{

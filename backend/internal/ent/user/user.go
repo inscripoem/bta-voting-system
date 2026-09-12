@@ -30,6 +30,10 @@ const (
 	FieldRole = "role"
 	// FieldIsGuest holds the string denoting the is_guest field in the database.
 	FieldIsGuest = "is_guest"
+	// FieldExternalProvider holds the string denoting the external_provider field in the database.
+	FieldExternalProvider = "external_provider"
+	// FieldExternalID holds the string denoting the external_id field in the database.
+	FieldExternalID = "external_id"
 	// EdgeSchool holds the string denoting the school edge name in mutations.
 	EdgeSchool = "school"
 	// EdgeVoteItems holds the string denoting the vote_items edge name in mutations.
@@ -62,6 +66,8 @@ var Columns = []string{
 	FieldPasswordHash,
 	FieldRole,
 	FieldIsGuest,
+	FieldExternalProvider,
+	FieldExternalID,
 }
 
 // ForeignKeys holds the SQL foreign-keys that are owned by the "users"
@@ -168,6 +174,16 @@ func ByRole(opts ...sql.OrderTermOption) OrderOption {
 // ByIsGuest orders the results by the is_guest field.
 func ByIsGuest(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldIsGuest, opts...).ToFunc()
+}
+
+// ByExternalProvider orders the results by the external_provider field.
+func ByExternalProvider(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldExternalProvider, opts...).ToFunc()
+}
+
+// ByExternalID orders the results by the external_id field.
+func ByExternalID(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldExternalID, opts...).ToFunc()
 }
 
 // BySchoolField orders the results by school field.
