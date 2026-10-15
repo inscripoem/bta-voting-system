@@ -20,6 +20,7 @@ var (
 	ErrMaxSupportExceeded  = errors.New("max support count exceeded for this award")
 	ErrInvalidScore        = errors.New("invalid score for this award")
 	ErrWrongSchoolForAward = errors.New("this entertainment award is not for your school")
+	ErrNomineeNotInSession = errors.New("nominee does not belong to this voting session")
 )
 
 type VoteItemInput struct {
@@ -37,7 +38,19 @@ func NewVoteService(db *ent.Client) *VoteService {
 
 // UpsertItems validates and batch-upserts vote items for a user.
 func (s *VoteService) UpsertItems(ctx context.Context, userID, sessionID, schoolID uuid.UUID, items []VoteItemInput, ip, ua string) error {
-	session, err := s.db.VotingSession.Get(ctx, sessionID)
+	tx, err := s.db.Tx(ctx)
+	if err != nil {
+		return fmt.Errorf("begin transaction: %w", err)
+	}
+	defer tx.Rollback()
+
+	// Serialize this user's vote writes across processes, including the initial
+	// insert when there are no vote rows to lock yet. Read merged scores only
+	// after acquiring the lock so concurrent requests cannot exceed max_count.
+	if _, err := tx.User.Query().Where(entuser.ID(userID)).ForUpdate().Only(ctx); err != nil {
+		return err
+	}
+	session, err := tx.VotingSession.Query().Where(entvotingsession.ID(sessionID)).ForShare().Only(ctx)
 	if err != nil {
 		return err
 	}
@@ -50,8 +63,11 @@ func (s *VoteService) UpsertItems(ctx context.Context, userID, sessionID, school
 		nomineeIDs = append(nomineeIDs, it.NomineeID)
 	}
 
-	nominees, err := s.db.Nominee.Query().
-		Where(entnominee.IDIn(nomineeIDs...)).
+	nominees, err := tx.Nominee.Query().
+		Where(
+			entnominee.IDIn(nomineeIDs...),
+			entnominee.HasAwardWith(entaward.HasSessionWith(entvotingsession.ID(sessionID))),
+		).
 		WithAward(func(q *ent.AwardQuery) {
 			q.WithSchool()
 		}).
@@ -70,7 +86,7 @@ func (s *VoteService) UpsertItems(ctx context.Context, userID, sessionID, school
 	for _, it := range items {
 		n, ok := nomineeMap[it.NomineeID]
 		if !ok {
-			return fmt.Errorf("nominee %s not found", it.NomineeID)
+			return ErrNomineeNotInSession
 		}
 		award := n.Edges.Award
 		if award == nil {
@@ -93,7 +109,7 @@ func (s *VoteService) UpsertItems(ctx context.Context, userID, sessionID, school
 
 	// Fetch user's existing vote items for this session to validate max_count
 	// against the merged (existing + incoming) set.
-	existingItems, err := s.db.VoteItem.Query().
+	existingItems, err := tx.VoteItem.Query().
 		Where(
 			entvoteitem.HasUserWith(entuser.ID(userID)),
 			entvoteitem.HasSessionWith(entvotingsession.ID(sessionID)),
@@ -125,7 +141,7 @@ func (s *VoteService) UpsertItems(ctx context.Context, userID, sessionID, school
 		if !ok {
 			// This nominee is from existing items not in the current request;
 			// we need to load its award.
-			n, err := s.db.Nominee.Query().
+			n, err := tx.Nominee.Query().
 				Where(entnominee.ID(nomineeID)).
 				WithAward().
 				Only(ctx)
@@ -142,7 +158,7 @@ func (s *VoteService) UpsertItems(ctx context.Context, userID, sessionID, school
 
 	// Validate max_count constraints per award against merged set
 	for awardID, scores := range awardMergedScores {
-		award, err := s.db.Award.Query().Where(entaward.ID(awardID)).Only(ctx)
+		award, err := tx.Award.Query().Where(entaward.ID(awardID)).Only(ctx)
 		if err != nil {
 			return err
 		}
@@ -161,12 +177,6 @@ func (s *VoteService) UpsertItems(ctx context.Context, userID, sessionID, school
 		}
 	}
 
-	// Wrap the upsert loop in a transaction
-	tx, err := s.db.Tx(ctx)
-	if err != nil {
-		return fmt.Errorf("begin transaction: %w", err)
-	}
-
 	for _, it := range items {
 		award := awardByNominee[it.NomineeID]
 
@@ -179,7 +189,6 @@ func (s *VoteService) UpsertItems(ctx context.Context, userID, sessionID, school
 			Only(ctx)
 
 		if queryErr != nil && !ent.IsNotFound(queryErr) {
-			_ = tx.Rollback()
 			return queryErr
 		}
 
@@ -205,7 +214,6 @@ func (s *VoteService) UpsertItems(ctx context.Context, userID, sessionID, school
 				Exec(ctx)
 		}
 		if upsertErr != nil {
-			_ = tx.Rollback()
 			return upsertErr
 		}
 	}

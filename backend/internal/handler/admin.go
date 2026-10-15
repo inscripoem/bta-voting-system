@@ -460,6 +460,10 @@ type createSchoolRequest struct {
 }
 
 func (h *AdminHandler) CreateSchool(c echo.Context) error {
+	claims := c.Get(apimw.ClaimsKey).(*service.Claims)
+	if claims.Role != "super_admin" {
+		return echo.NewHTTPError(http.StatusForbidden, "super_admin required")
+	}
 	var req createSchoolRequest
 	if err := c.Bind(&req); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())

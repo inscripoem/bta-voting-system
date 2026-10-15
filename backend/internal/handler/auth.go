@@ -293,27 +293,18 @@ func (h *AuthHandler) Upgrade(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "password is required")
 	}
 
-	user, err := h.auth.DB().User.Query().Where(entuser.ID(claims.UserID)).Only(c.Request().Context())
-	if err != nil {
+	if err := h.auth.UpgradeAccount(c.Request().Context(), claims.UserID, req.Password); err != nil {
 		if ent.IsNotFound(err) {
 			return echo.NewHTTPError(http.StatusNotFound, "user not found")
 		}
-		return echo.NewHTTPError(http.StatusInternalServerError, "failed to load user")
-	}
-	if user.Email == nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "email not verified: call /auth/verify-email first")
-	}
-
-	hashed, err := service.HashPassword(req.Password)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, "failed to hash password")
-	}
-
-	err = h.auth.DB().User.UpdateOneID(claims.UserID).
-		SetPasswordHash(hashed).
-		SetIsGuest(false).
-		Exec(c.Request().Context())
-	if err != nil {
+		switch err {
+		case service.ErrEmailAlreadyTaken:
+			return echo.NewHTTPError(http.StatusConflict, "email already registered")
+		case service.ErrEmailRequired:
+			return echo.NewHTTPError(http.StatusBadRequest, "email not verified: call /auth/verify-email first")
+		case service.ErrAlreadyRegistered:
+			return echo.NewHTTPError(http.StatusBadRequest, "account already registered")
+		}
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to upgrade account")
 	}
 
@@ -352,7 +343,14 @@ func (h *AuthHandler) VerifyEmail(c echo.Context) error {
 	}
 
 	if err := h.auth.VerifyEmailCode(c.Request().Context(), claims.UserID, req.Email, req.Code); err != nil {
-		return echo.NewHTTPError(http.StatusUnauthorized, "invalid or expired code")
+		switch err {
+		case service.ErrEmailAlreadyTaken:
+			return echo.NewHTTPError(http.StatusConflict, "email already registered")
+		case service.ErrInvalidCode:
+			return echo.NewHTTPError(http.StatusBadRequest, "invalid or expired code")
+		default:
+			return echo.NewHTTPError(http.StatusInternalServerError, "failed to update email")
+		}
 	}
 
 	return c.JSON(http.StatusOK, map[string]string{"message": "邮箱验证成功"})

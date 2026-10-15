@@ -59,6 +59,8 @@ func (h *VoteHandler) UpsertItems(c echo.Context) error {
 			return echo.NewHTTPError(http.StatusBadRequest, "max support count exceeded for this award")
 		case service.ErrInvalidScore:
 			return echo.NewHTTPError(http.StatusBadRequest, "invalid score")
+		case service.ErrNomineeNotInSession:
+			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 		case service.ErrWrongSchoolForAward:
 			return echo.NewHTTPError(http.StatusForbidden, "this award is not for your school")
 		default:
