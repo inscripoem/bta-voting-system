@@ -2,6 +2,7 @@ package schema
 
 import (
 	"entgo.io/ent"
+	"entgo.io/ent/dialect/entsql"
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
 	"entgo.io/ent/schema/index"
@@ -39,5 +40,8 @@ func (User) Indexes() []ent.Index {
 	return []ent.Index{
 		// Nickname is unique within the same school
 		index.Fields("nickname").Edges("school").Unique(),
+		// Guests may share an email; password login must identify one formal user.
+		index.Fields("email").Unique().StorageKey("users_formal_email_key").
+			Annotations(entsql.IndexWhere("is_guest = false")),
 	}
 }

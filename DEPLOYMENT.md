@@ -19,6 +19,23 @@
 
 ## Part 1: 后端部署（Docker Compose）
 
+### 已有数据库升级：正式账户邮箱唯一索引
+
+后端启动时会为 `users.email` 添加唯一索引 `users_formal_email_key`，仅约束
+`is_guest=false` 的正式账户，访客仍可共用邮箱。部署前在现有数据库执行：
+
+```sql
+SELECT email, count(*) AS account_count, array_agg(id) AS user_ids
+FROM users
+WHERE is_guest = false AND email IS NOT NULL
+GROUP BY email
+HAVING count(*) > 1;
+```
+
+如果返回记录，需先核实这些账户并为其绑定不同的已验证邮箱，再启动新版后端。
+程序不会自动删除账户、合并选票或更改邮箱；存在重复值时建索引会失败并阻止启动。
+数据库升级前应完成备份。
+
 ### 1.1 服务器准备
 
 **最低配置要求：**

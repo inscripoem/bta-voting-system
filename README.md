@@ -157,6 +157,22 @@ bun run dev
 
 ## Smoke Test 清单
 
+### 自动回归测试
+
+```bash
+cd backend
+go test ./...
+# 可选：实际验证 PostgreSQL 行锁、跨届校验和正式账户邮箱唯一性。
+# 必须使用独立的测试实例；该角色需要 CREATEDB 权限。
+# 测试为每个用例创建随机数据库并在结束时删除，不修改已有数据库中的表。
+TEST_DATABASE_URL='postgres://postgres:password@localhost:5432/postgres?sslmode=disable' go test ./...
+
+cd ../frontend
+bun test
+```
+
+### 手动检查
+
 - [ ] 选择学校 → 验证题验证 → 创建 guest → 进入投票页
 - [ ] 选择学校 → 邮箱验证 → 创建 guest → 进入投票页
 - [ ] 昵称冲突（正式用户）→ 显示"前往登录"或"返回换昵称"

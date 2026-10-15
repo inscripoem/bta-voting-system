@@ -1,9 +1,10 @@
 "use client"
 
-import { useEffect, useState, useCallback } from "react"
+import { useEffect, useState, useCallback, useRef } from "react"
 import { AnimatePresence, motion } from "framer-motion"
 import { Loader2, CheckCircle2, AlertCircle } from "lucide-react"
 import { api, Award } from "@/lib/api"
+import { VoteSaveQueue } from "@/lib/vote-save-queue"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useVoteStore } from "@/hooks/useVoteStore"
@@ -44,38 +45,55 @@ export function VoteForm() {
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState("")
   const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null)
-  const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState(false)
+  const [loadAttempt, setLoadAttempt] = useState(0)
+  const [loadedFor, setLoadedFor] = useState("")
+  const voteKey = school && session ? `${school.id}:${session.id}:${loadAttempt}` : ""
+  const saveQueue = useRef<VoteSaveQueue | null>(null)
 
   useEffect(() => {
     if (!school || !session) return
-    setLoading(true)
+    let disposed = false
+    saveQueue.current = null
     Promise.all([
       api.awards.list(school.id),
       api.vote.getItems(session.id)
     ]).then(([awardsRes, itemsRes]) => {
+      if (disposed) return
       setAwards(awardsRes)
       const map: Record<string, number> = {}
       itemsRes.forEach((it) => { map[it.nominee_id] = it.score })
       setVotes(map)
-    })
-    .catch(console.error)
-    .finally(() => setLoading(false))
-  }, [school, session])
-
-  const handleVote = useCallback(async (nomineeId: string, score: number) => {
-    if (!session) return
-    setVotes((prev) => ({ ...prev, [nomineeId]: score }))
-    setSaving(true)
-    setSaveError("")
-    try {
-      await api.vote.upsertItems(session.id, [{ nominee_id: nomineeId, score }])
-      setLastSavedAt(new Date())
-    } catch {
-      setSaveError("保存失败，请重试")
-    } finally {
+      setLoadError(false)
       setSaving(false)
+      setSaveError("")
+      setLastSavedAt(null)
+      saveQueue.current = new VoteSaveQueue(
+        map,
+        (nomineeId, score) => api.vote.upsertItems(session.id, [{ nominee_id: nomineeId, score }]),
+        (state) => {
+          if (disposed) return
+          setVotes(state.votes)
+          setSaving(state.pending > 0)
+          setSaveError(state.failed.length > 0 ? "部分选项保存失败，已恢复原选项，请重新选择重试" : "")
+          setLastSavedAt(state.lastSavedAt)
+        },
+      )
+    })
+    .catch((err) => {
+      console.error(err)
+      if (!disposed) setLoadError(true)
+    })
+    .finally(() => { if (!disposed) setLoadedFor(`${school.id}:${session.id}:${loadAttempt}`) })
+    return () => {
+      disposed = true
+      saveQueue.current = null
     }
-  }, [session])
+  }, [school, session, loadAttempt])
+
+  const handleVote = useCallback((nomineeId: string, score: number) => {
+    void saveQueue.current?.enqueue(nomineeId, score)
+  }, [])
 
   const mandatory = awards.filter((a) => a.category === "mandatory")
   const optional = awards.filter((a) => a.category === "optional")
@@ -95,7 +113,13 @@ export function VoteForm() {
     }, 0)
   }, [optional, entertainment, showAllOptional, showAllEntertainment])
 
-  if (loading) return <VoteSkeleton />
+  if (!voteKey || loadedFor !== voteKey) return <VoteSkeleton />
+  if (loadError) return (
+    <div className="space-y-4 text-center py-12" role="alert">
+      <p>加载投票失败，请重试。</p>
+      <Button onClick={() => setLoadAttempt((attempt) => attempt + 1)}>重新加载</Button>
+    </div>
+  )
 
   return (
     <div className="relative">
@@ -107,15 +131,15 @@ export function VoteForm() {
         <div className="flex items-center justify-between sticky top-[3.5rem] z-20 bg-background/80 backdrop-blur-sm py-4 border-b -mx-4 px-4 mb-4">
           <h1 className="text-xl font-bold tracking-tight">投票</h1>
           <div className="flex items-center gap-2 text-xs font-medium">
-            {saving ? (
+            {saveError ? (
+              <span className="flex items-center gap-1.5 text-destructive" role="alert">
+                <AlertCircle className="h-3 w-3" />
+                {saveError}
+              </span>
+            ) : saving ? (
               <span className="flex items-center gap-1.5 text-muted-foreground animate-pulse">
                 <Loader2 className="h-3 w-3 animate-spin" />
                 正在保存...
-              </span>
-            ) : saveError ? (
-              <span className="flex items-center gap-1.5 text-destructive">
-                <AlertCircle className="h-3 w-3" />
-                {saveError}
               </span>
             ) : lastSavedAt ? (
               <span className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400">

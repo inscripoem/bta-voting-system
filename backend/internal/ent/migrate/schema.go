@@ -3,6 +3,7 @@
 package migrate
 
 import (
+	"entgo.io/ent/dialect/entsql"
 	"entgo.io/ent/dialect/sql/schema"
 	"entgo.io/ent/schema/field"
 )
@@ -93,7 +94,7 @@ var (
 		{Name: "id", Type: field.TypeUUID},
 		{Name: "created_at", Type: field.TypeTime},
 		{Name: "updated_at", Type: field.TypeTime},
-		{Name: "nickname", Type: field.TypeString, Unique: true},
+		{Name: "nickname", Type: field.TypeString},
 		{Name: "email", Type: field.TypeString, Nullable: true},
 		{Name: "password_hash", Type: field.TypeString, Nullable: true},
 		{Name: "role", Type: field.TypeEnum, Enums: []string{"voter", "school_admin", "super_admin"}, Default: "voter"},
@@ -111,6 +112,21 @@ var (
 				Columns:    []*schema.Column{UsersColumns[8]},
 				RefColumns: []*schema.Column{SchoolsColumns[0]},
 				OnDelete:   schema.SetNull,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "user_nickname_school_users",
+				Unique:  true,
+				Columns: []*schema.Column{UsersColumns[3], UsersColumns[8]},
+			},
+			{
+				Name:    "users_formal_email_key",
+				Unique:  true,
+				Columns: []*schema.Column{UsersColumns[4]},
+				Annotation: &entsql.IndexAnnotation{
+					Where: "is_guest = false",
+				},
 			},
 		},
 	}

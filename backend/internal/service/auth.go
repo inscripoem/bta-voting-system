@@ -15,6 +15,7 @@ import (
 	"github.com/inscripoem/bta-voting-system/backend/internal/ent"
 	entschool "github.com/inscripoem/bta-voting-system/backend/internal/ent/school"
 	entuser "github.com/inscripoem/bta-voting-system/backend/internal/ent/user"
+	"github.com/lib/pq"
 )
 
 var (
@@ -23,6 +24,7 @@ var (
 	ErrWrongAnswer                       = errors.New("wrong_answer")
 	ErrEmailRequired                     = errors.New("email_required")
 	ErrEmailAlreadyTaken                 = errors.New("email_already_taken")
+	ErrAlreadyRegistered                 = errors.New("account_already_registered")
 	ErrEmailSuffixNotAllowed             = errors.New("email_suffix_not_allowed")
 	ErrEmailCodeRequired                 = errors.New("email_and_code_required")
 	ErrEmailMismatch                     = errors.New("email_mismatch")
@@ -301,7 +303,7 @@ func (s *AuthService) createRegistered(ctx context.Context, nickname string, sch
 		SetPasswordHash(hashed).
 		Save(ctx)
 	if err != nil {
-		return "", "", err
+		return "", "", emailWriteError(err)
 	}
 	return s.issueTokens(ctx, user)
 }
@@ -396,10 +398,46 @@ func (s *AuthService) VerifyEmailCode(ctx context.Context, userID uuid.UUID, ema
 	}
 
 	_, err := s.db.User.UpdateOneID(userID).SetEmail(normalized).Save(ctx)
+	return emailWriteError(err)
+}
+
+// UpgradeAccount preserves the guest's votes and relies on the partial unique
+// index to arbitrate competing registrations, upgrades, and email changes.
+func (s *AuthService) UpgradeAccount(ctx context.Context, userID uuid.UUID, password string) error {
+	u, err := s.db.User.Get(ctx, userID)
 	if err != nil {
 		return err
 	}
+	if !u.IsGuest {
+		return ErrAlreadyRegistered
+	}
+	if u.Email == nil || normalizeEmail(*u.Email) == "" {
+		return ErrEmailRequired
+	}
+	hashed, err := HashPassword(password)
+	if err != nil {
+		return err
+	}
+	count, err := s.db.User.Update().
+		Where(entuser.ID(userID), entuser.IsGuestEQ(true)).
+		SetPasswordHash(hashed).
+		SetIsGuest(false).
+		Save(ctx)
+	if err != nil {
+		return emailWriteError(err)
+	}
+	if count != 1 {
+		return ErrAlreadyRegistered
+	}
 	return nil
+}
+
+func emailWriteError(err error) error {
+	var pgErr *pq.Error
+	if errors.As(err, &pgErr) && pgErr.Code == "23505" && pgErr.Constraint == "users_formal_email_key" {
+		return ErrEmailAlreadyTaken
+	}
+	return err
 }
 
 func (s *AuthService) issueTokens(ctx context.Context, user *ent.User) (access, refresh string, err error) {
